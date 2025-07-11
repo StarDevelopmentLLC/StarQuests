@@ -1,5 +1,7 @@
 package com.stardevllc.starquests.actions;
 
+import com.stardevllc.converter.string.StringConverters;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -61,11 +63,11 @@ public class QuestActionData {
             try {
                 return Double.parseDouble(str);
             } catch (Throwable t) {
-                return 0;
+                return 0.0;
             }
         }
         
-        return 0;
+        return 0.0;
     }
     
     public String getAsString(String key) {
@@ -78,7 +80,7 @@ public class QuestActionData {
             return str;
         }
         
-        return o.toString();
+        return StringConverters.getConverter(o).toString();
     }
     
     public boolean getAsBoolean(String key) {
