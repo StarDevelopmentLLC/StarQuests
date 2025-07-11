@@ -4,12 +4,12 @@ import com.stardevllc.dependency.Inject;
 import org.bukkit.event.Event;
 
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 /**
  * Represents an action for a quest
  */
-public class QuestAction<T extends Event> {
+public class QuestAction<T> {
     @Inject
     protected StarQuests plugin;
     
@@ -17,9 +17,9 @@ public class QuestAction<T extends Event> {
     protected String name;
     protected List<String> description;
     protected Class<T> type;
-    protected Predicate<T> predicate;
+    protected BiPredicate<QuestAction<T>, T> predicate;
     
-    public QuestAction(String id, String name, List<String> description, Class<T> type, Predicate<T> predicate) {
+    public QuestAction(String id, String name, List<String> description, Class<T> type, BiPredicate<QuestAction<T>, T> predicate) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -31,7 +31,7 @@ public class QuestAction<T extends Event> {
         try {
             if (event.getClass().equals(type)) {
                 T t = (T) event;
-                return this.predicate.test(t);
+                return this.predicate.test(this, t);
             }
         } catch (Exception exception) {
             return false;
