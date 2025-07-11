@@ -18,14 +18,17 @@ public class QuestActionData {
         this.data.put(key, data);
     }
     
-    public <T> void modifyData(String key, Function<T, T> function, T defaultValue) {
+    public <T> T modifyData(String key, Function<T, T> function, T defaultValue) {
         try {
             Object o = this.data.get(key);
             if (o == null) {
                 o = defaultValue;
             }
-            this.data.put(key, function.apply((T) o));
+            T newData = function.apply((T) o);
+            this.data.put(key, newData);
+            return newData;
         } catch (Throwable t) {}
+        return defaultValue;
     }
     
     public Object get(String key) {

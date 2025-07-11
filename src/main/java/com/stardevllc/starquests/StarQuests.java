@@ -35,8 +35,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 return false;
             }
             
-            playerData.modifyData("count", count -> count + 1, 0);
-            return playerData.getAsInt("count") >= 4;
+            return playerData.modifyData("count", count -> count + 1, 0) >= 4;
         }, List.of(), (a, e, playerData) -> getColors().coloredLegacy(e.getPlayer(), "&eLogs Broken: &a" + playerData.getAsInt("count") + " &e/ &d4"), null)));
         
         this.actions.put("craft_4_planks", getInjector().inject(new QuestAction<>("craft_4_planks", "Craft 4 Planks", List.of(), CraftItemEvent.class, (a, e, playerData) -> {
@@ -45,8 +44,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 return false;
             }
             
-            playerData.modifyData("count", count -> count + result.getAmount(), 0);
-            return playerData.getAsInt("count") >= 4;
+            return playerData.modifyData("count", count -> count + result.getAmount(), 0) >= 4;
         }, List.of("break_4_logs"), (a, e, playerData) -> getColors().coloredLegacy(e.getWhoClicked(), "&ePlanks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d4"), null)));
         
         this.actions.put("craft_workbench", getInjector().inject(new QuestAction<>("craft_workbench", "Craft Workbench", List.of(), CraftItemEvent.class, (a, e, playerData) -> e.getInventory().getResult().getType() == Material.CRAFTING_TABLE, List.of("craft_4_planks"), null, null)));
