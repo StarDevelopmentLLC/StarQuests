@@ -3,6 +3,9 @@ package com.stardevllc.starquests;
 import com.stardevllc.eventbus.SubscribeEvent;
 import com.stardevllc.starcore.api.StarEvents;
 import com.stardevllc.starmclib.plugin.ExtendedJavaPlugin;
+import com.stardevllc.starquests.actions.QuestAction;
+import com.stardevllc.starquests.actions.QuestActionData;
+import org.bukkit.Material;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.BlockBreakEvent;
 

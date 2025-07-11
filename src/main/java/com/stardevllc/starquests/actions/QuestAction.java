@@ -1,4 +1,4 @@
-package com.stardevllc.starquests;
+package com.stardevllc.starquests.actions;
 
 import com.stardevllc.dependency.Inject;
 import org.bukkit.event.Event;

@@ -1,4 +1,4 @@
-package com.stardevllc.starquests;
+package com.stardevllc.starquests.actions;
 
 import java.util.HashMap;
 import java.util.Map;
