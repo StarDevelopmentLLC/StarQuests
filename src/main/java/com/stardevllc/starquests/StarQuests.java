@@ -36,18 +36,8 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             }
             
             playerData.modifyData("count", count -> count + 1, 0);
-            
-            Object rawCount = playerData.get("count");
-            if (rawCount instanceof Integer count) {
-                return count >= 4;
-            }
-            
-            return false;
-        }, List.of(), (a, e, playerData) -> {
-            if (playerData.get("count") instanceof Integer count) {
-                getColors().coloredLegacy(e.getPlayer(), "&eLogs Broken: &a" + count + " &e/ &d4");
-            }
-        }, null)));
+            return playerData.getAsInt("count") >= 4;
+        }, List.of(), (a, e, playerData) -> getColors().coloredLegacy(e.getPlayer(), "&eLogs Broken: &a" + playerData.getAsInt("count") + " &e/ &d4"), null)));
         
         this.actions.put("craft_4_planks", getInjector().inject(new QuestAction<>("craft_4_planks", "Craft 4 Planks", List.of(), CraftItemEvent.class, (a, e, playerData) -> {
             ItemStack result = e.getInventory().getResult();
@@ -56,17 +46,8 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             }
             
             playerData.modifyData("count", count -> count + result.getAmount(), 0);
-            
-            if (playerData.get("count") instanceof Integer count) {
-                return count >= 4;
-            }
-            
-            return false;
-        }, List.of("break_4_logs"), (a, e, playerData) -> {
-            if (playerData.get("count") instanceof Integer count) {
-                getColors().coloredLegacy(e.getWhoClicked(), "&ePlanks Crafted: &a" + count + " &e/ &d4");
-            }
-        }, null)));
+            return playerData.getAsInt("count") >= 4;
+        }, List.of("break_4_logs"), (a, e, playerData) -> getColors().coloredLegacy(e.getWhoClicked(), "&ePlanks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d4"), null)));
         
         this.actions.put("craft_workbench", getInjector().inject(new QuestAction<>("craft_workbench", "Craft Workbench", List.of(), CraftItemEvent.class, (a, e, playerData) -> e.getInventory().getResult().getType() == Material.CRAFTING_TABLE, List.of("craft_4_planks"), null, null)));
     }
