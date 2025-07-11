@@ -41,7 +41,11 @@ public class QuestActionData {
         }
         
         if (o instanceof String str) {
-            return Integer.parseInt(str);
+            try {
+                return Integer.parseInt(str);
+            } catch (Throwable t) {
+                return 0;
+            }
         }
         
         return 0;
