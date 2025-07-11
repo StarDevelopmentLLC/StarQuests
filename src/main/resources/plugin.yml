@@ -1,9 +1,7 @@
 main: com.stardevllc.starquests.StarQuests
 version: ${version}
-api-version: 1.20
+api-version: 1.13
 name: ${name}
 author: Firestar311
 depend: [StarCore]
 softdepend: [PlaceholderAPI, Vault]
-commands:
-  
