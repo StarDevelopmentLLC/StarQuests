@@ -29,4 +29,21 @@ public class QuestActionData {
     public Object get(String key) {
         return this.data.get(key);
     }
+    
+    public int getAsInt(String key) {
+        if (!this.data.containsKey(key)) {
+            return 0;
+        }
+        
+        Object o = this.data.get(key);
+        if (o instanceof Number number) {
+            return number.intValue();
+        }
+        
+        if (o instanceof String str) {
+            return Integer.parseInt(str);
+        }
+        
+        return 0;
+    }
 }

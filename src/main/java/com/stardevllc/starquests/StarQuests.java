@@ -5,6 +5,9 @@ import com.stardevllc.starcore.api.StarEvents;
 import com.stardevllc.starmclib.plugin.ExtendedJavaPlugin;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.actions.QuestActionData;
+import com.stardevllc.starquests.events.ActionCompleteEvent;
+import com.stardevllc.starquests.events.QuestEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
@@ -36,12 +39,15 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             
             Object rawCount = playerData.get("count");
             if (rawCount instanceof Integer count) {
-                getColors().coloredLegacy(e.getPlayer(), "&eQuestAction: &b" + a.getName() + "&e: &a" + count + " &e/ &d4");
                 return count >= 4;
             }
             
             return false;
-        }, List.of())));
+        }, List.of(), (a, e, playerData) -> {
+            if (playerData.get("count") instanceof Integer count) {
+                getColors().coloredLegacy(e.getPlayer(), "&eLogs Broken: &a" + count + " &e/ &d4");
+            }
+        }, null)));
         
         this.actions.put("craft_4_planks", getInjector().inject(new QuestAction<>("craft_4_planks", "Craft 4 Planks", List.of(), CraftItemEvent.class, (a, e, playerData) -> {
             ItemStack result = e.getInventory().getResult();
@@ -51,16 +57,18 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             
             playerData.modifyData("count", count -> count + result.getAmount(), 0);
             
-            Object rawCount = playerData.get("count");
-            if (rawCount instanceof Integer count) {
-                getColors().coloredLegacy(e.getWhoClicked(), "&eQuestAction: &b" + a.getName() + "&e: &a" + count + " &e/ &d4");
+            if (playerData.get("count") instanceof Integer count) {
                 return count >= 4;
             }
             
             return false;
-        }, List.of("break_4_logs"))));
+        }, List.of("break_4_logs"), (a, e, playerData) -> {
+            if (playerData.get("count") instanceof Integer count) {
+                getColors().coloredLegacy(e.getWhoClicked(), "&ePlanks Crafted: &a" + count + " &e/ &d4");
+            }
+        }, null)));
         
-        this.actions.put("craft_workbench", getInjector().inject(new QuestAction<>("craft_workbench", "Craft Workbench", List.of(), CraftItemEvent.class, (a, e, playerData) -> e.getInventory().getResult().getType() == Material.CRAFTING_TABLE, List.of("craft_4_planks"))));
+        this.actions.put("craft_workbench", getInjector().inject(new QuestAction<>("craft_workbench", "Craft Workbench", List.of(), CraftItemEvent.class, (a, e, playerData) -> e.getInventory().getResult().getType() == Material.CRAFTING_TABLE, List.of("craft_4_planks"), null, null)));
     }
     
     public QuestActionData getActionData(UUID uuid, QuestAction<?> action) {
@@ -86,27 +94,45 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
     
     @SubscribeEvent
     public void onEvent(Event e) {
+        //Ignore custom events for quests as these are mainly for formatting and stuff
+        if (e instanceof QuestEvent) {
+            System.out.println("Ignoring QuestEvent");
+            return;
+        }
+        
+        //Loop through all actions to check them
         for (QuestAction<?> action : this.actions.values()) {
             try {
+                //Get the player from the event. Some events may need to be specified, bu the method supports that thing
                 QuestUtils.getPlayerFromEvent(e).ifPresent(player -> {
+                    //Ignore completed actions
                     if (isActionComplete(player.getUniqueId(), action)) {
                         return;
                     }
                     
+                    //Check action prerequisites
                     for (String pa : action.getPrerequisiteActions()) {
                         if (!isActionComplete(player.getUniqueId(), this.actions.get(pa))) {
                             return;
                         }
                     }
                     
+                    //Get or create action data
                     QuestActionData actionData = getActionData(player.getUniqueId(), action);
                     
+                    //Test the action for completion or update the quest
                     if (action.check(e, actionData)) {
+                        //If complete, mark it as complete
+                        Bukkit.getPluginManager().callEvent(new ActionCompleteEvent(action, actionData));
+                        action.handleOnComplete(e, actionData);
                         completeAction(player.getUniqueId(), action);
+                        //Mainly a testing message for now
                         getColors().coloredLegacy(player, "&aCompleted Quest Action: &b" + action.getName());
                     }
                 });
-            } catch (Throwable ex) {}
+            } catch (Throwable ex) {
+                ex.printStackTrace();
+            }
         }
     }
 }
