@@ -38,9 +38,7 @@ public class QuestActionData {
         Object o = this.data.get(key);
         if (o instanceof Number number) {
             return number.intValue();
-        }
-        
-        if (o instanceof String str) {
+        } else if (o instanceof String str) {
             try {
                 return Integer.parseInt(str);
             } catch (Throwable t) {
@@ -49,5 +47,56 @@ public class QuestActionData {
         }
         
         return 0;
+    }
+    
+    public double getAsDouble(String key) {
+        if (!this.data.containsKey(key)) {
+            return 0.0;
+        }
+        
+        Object o = this.data.get(key);
+        if (o instanceof Number number) {
+            return number.doubleValue();
+        } else if (o instanceof String str) {
+            try {
+                return Double.parseDouble(str);
+            } catch (Throwable t) {
+                return 0;
+            }
+        }
+        
+        return 0;
+    }
+    
+    public String getAsString(String key) {
+        if (!this.data.containsKey(key)) {
+            return "";
+        }
+        
+        Object o = this.data.get(key);
+        if (o instanceof String str) {
+            return str;
+        }
+        
+        return o.toString();
+    }
+    
+    public boolean getAsBoolean(String key) {
+        if (!this.data.containsKey(key)) {
+            return false;
+        }
+        
+        Object o = this.data.get(key);
+        if (o instanceof Boolean bool) {
+            return bool;
+        } else if (o instanceof String str) {
+            try {
+                return Boolean.parseBoolean(str);
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        
+        return false;
     }
 }
