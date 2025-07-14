@@ -1,10 +1,10 @@
 package com.stardevllc.starquests.actions;
 
 import com.stardevllc.dependency.Inject;
-import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.actions.function.QuestActionConsumer;
 import com.stardevllc.starquests.actions.function.QuestActionPredicate;
 import com.stardevllc.starquests.events.ActionUpdateEvent;
+import com.stardevllc.starquests.quests.Quest;
 import org.bukkit.Bukkit;
 
 import java.util.ArrayList;
@@ -14,9 +14,6 @@ import java.util.List;
  * Represents an action for a quest
  */
 public class QuestAction<T> {
-    @Inject
-    protected StarQuests starQuests;
-    
     protected String id;
     protected String name;
     protected List<String> description;
@@ -24,6 +21,9 @@ public class QuestAction<T> {
     protected QuestActionPredicate<T> predicate;
     protected List<String> prerequisiteActions = new ArrayList<>();
     protected QuestActionConsumer<T> onUpdate, onComplete;
+    
+    @Inject
+    protected Quest quest;
     
     public QuestAction(String id, String name, List<String> description, Class<T> type, QuestActionPredicate<T> predicate, List<String> prerequisiteActions, QuestActionConsumer<T> onUpdate, QuestActionConsumer<T> onComplete) {
         this.id = id;
@@ -69,10 +69,6 @@ public class QuestAction<T> {
         }
     }
     
-    public StarQuests getStarQuests() {
-        return starQuests;
-    }
-    
     public String getId() {
         return id;
     }
@@ -95,5 +91,9 @@ public class QuestAction<T> {
     
     public List<String> getPrerequisiteActions() {
         return prerequisiteActions;
+    }
+    
+    public Quest getQuest() {
+        return quest;
     }
 }
