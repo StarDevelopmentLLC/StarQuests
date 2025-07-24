@@ -1,6 +1,6 @@
 package com.stardevllc.starquests.actions;
 
-import com.stardevllc.converter.string.StringConverters;
+import com.stardevllc.starlib.converter.string.StringConverters;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,7 +1,7 @@
 package com.stardevllc.starquests.quests;
 
-import com.stardevllc.dependency.DependencyInjector;
-import com.stardevllc.dependency.Inject;
+import com.stardevllc.starlib.dependency.DependencyInjector;
+import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.quests.function.QuestConsumer;

@@ -1,7 +1,8 @@
 package com.stardevllc.starquests;
 
-import com.stardevllc.eventbus.SubscribeEvent;
 import com.stardevllc.starcore.api.StarEvents;
+import com.stardevllc.starlib.eventbus.SubscribeEvent;
+import com.stardevllc.starmclib.StarMCLib;
 import com.stardevllc.starmclib.plugin.ExtendedJavaPlugin;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.actions.QuestActionData;
@@ -29,10 +30,12 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
     @Override
     public void onEnable() {
         super.onEnable();
-        StarEvents.subscribe(getEventBus());
+        StarMCLib.registerPluginEventBus(getEventBus());
+        StarMCLib.registerPluginInjector(this, getInjector());
+        StarEvents.addChildBus(getEventBus());
         getEventBus().subscribe(this);
         
-        getServer().getPluginManager().registerEvents(this, this);
+        registerListeners(this);
         
         getServer().getScheduler().runTaskTimer(this, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {

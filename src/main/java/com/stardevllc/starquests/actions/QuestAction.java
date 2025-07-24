@@ -1,6 +1,6 @@
 package com.stardevllc.starquests.actions;
 
-import com.stardevllc.dependency.Inject;
+import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starquests.actions.function.QuestActionConsumer;
 import com.stardevllc.starquests.actions.function.QuestActionPredicate;
 import com.stardevllc.starquests.events.ActionUpdateEvent;
