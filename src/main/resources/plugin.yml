@@ -5,3 +5,5 @@ name: ${name}
 author: Firestar311
 depend: [StarCore]
 softdepend: [PlaceholderAPI, Vault]
+commands: 
+  quest:
