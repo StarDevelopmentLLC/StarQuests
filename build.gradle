@@ -7,7 +7,7 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven {
-        url = 'https://www.jitpack.io'
+        url = 'https://repo.stardevllc.com/releases'
     }
     maven {
         url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
@@ -22,7 +22,7 @@ dependencies {
     compileOnly 'com.github.MilkBowl:VaultAPI:1.7.1'
     compileOnly 'me.clip:placeholderapi:2.11.6'
     compileOnly 'com.stardevllc:StarCore:0.10.1'
-    compileOnly 'com.stardevllc:StarMCLib:0.5.0'
+    compileOnly 'com.stardevllc:StarMCLib:0.6.0'
     compileOnly 'com.stardevllc:StarLib:0.15.0'
     compileOnly 'com.stardevllc:config:0.2.0'
 }
