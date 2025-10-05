@@ -19,25 +19,22 @@ public class QuestCmd implements CommandExecutor {
             return true;
         }
         
+        boolean hasQuest = false;
         for (Quest quest : plugin.getQuestRegistry()) {
-            if (plugin.isQuestComplete(player.getUniqueId(), quest)) {
-                plugin.getColors().coloredLegacy(player, "&a" + quest.getName());
-            } else if (plugin.isQuestAvailble(player.getUniqueId(), quest)) {
+            if (plugin.isQuestAvailble(player.getUniqueId(), quest)) {
+                hasQuest = true;
                 plugin.getColors().coloredLegacy(player, "&e" + quest.getName());
                 
                 for (QuestAction<?> action : quest.getActions().values()) {
-                    if (plugin.isActionComplete(player.getUniqueId(), action)) {
-                        plugin.getColors().coloredLegacy(player, "    &a" + action.getName());
-                    }else if (plugin.isActionAvailable(player.getUniqueId(), action)) {
+                    if (plugin.isActionAvailable(player.getUniqueId(), action)) {
                         plugin.getColors().coloredLegacy(player, "    &e" + action.getName());
-                    } else {
-                        plugin.getColors().coloredLegacy(player, "    &c" + action.getName());
                     }
                 }
-                
-            } else {
-                plugin.getColors().coloredLegacy(player, "&c" + quest.getName());
             }
+        }
+        
+        if (!hasQuest) {
+            plugin.getColors().coloredLegacy(player, "&cNo quests available.");
         }
         
         return true;
