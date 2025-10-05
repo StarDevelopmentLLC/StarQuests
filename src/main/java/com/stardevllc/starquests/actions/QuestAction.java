@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Represents an action for a quest
  */
-public class QuestAction<T> {
+public class QuestAction<T> implements Comparable<QuestAction<T>> {
     protected String id;
     protected String name;
     protected List<String> description = new LinkedList<>();
@@ -129,6 +129,22 @@ public class QuestAction<T> {
     
     public static <T> Builder<T> builder(Class<T> type) {
         return new Builder<>(type);
+    }
+    
+    @Override
+    public int compareTo(QuestAction<T> o) {
+        //If this action has the other action as a requirement, then this action is less than the other action
+        if (this.requiredActions.contains(o.getId())) {
+            return -1;
+        }
+        
+        //If the other action has this quest as a requirement, then this action is greater than the other action
+        if (o.requiredActions.contains(this.id)) {
+            return 1;
+        }
+        
+        //Otherwise, just sort the actions based on the id
+        return this.id.compareTo(o.id);
     }
     
     public static class Builder<T> implements IBuilder<QuestAction<T>, Builder<T>> {
