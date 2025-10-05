@@ -16,14 +16,19 @@ import org.bukkit.ChatColor;
 import java.util.*;
 
 public class QuestLine {
+    private static QuestRegistry primaryQuestRegistry;
+    
+    public static void setPrimaryQuestRegistry(QuestRegistry registry) {
+        if (primaryQuestRegistry == null) {
+            primaryQuestRegistry = registry;
+        }
+    }
+    
     @Inject
     protected StarQuests starQuests;
     
     @Inject
     protected QuestLineRegistry questLineRegistry;
-    
-    @Inject
-    protected QuestRegistry mainQuestRegistry;
     
     protected String id;
     protected String name;
@@ -50,7 +55,10 @@ public class QuestLine {
         this.injector.setInstance(this.quests);
         
         if (quests != null) {
-            quests.forEach((qid, quest) -> this.quests.register(quest));
+            quests.forEach((qid, quest) -> {
+                this.quests.register(quest);
+                primaryQuestRegistry.register(quest);
+            });
         }
     }
     
@@ -97,6 +105,10 @@ public class QuestLine {
         return true;
     }
     
+    public static Builder builder() {
+        return new Builder();
+    }
+    
     public static class Builder implements IBuilder<QuestLine, Builder> {
         private String id;
         private String name;
@@ -105,7 +117,8 @@ public class QuestLine {
         private Map<String, Quest> quests = new HashMap<>();
         private QuestLineConsumer onComplete;
         
-        public Builder() {}
+        public Builder() {
+        }
         
         public Builder(Builder builder) {
             this.id = builder.id;
@@ -132,7 +145,7 @@ public class QuestLine {
             return self();
         }
         
-        public Builder requiredQuests(String... requiredLines) {
+        public Builder requiredLines(String... requiredLines) {
             this.requiredLines.clear();
             this.requiredLines.addAll(List.of(requiredLines));
             return self();
