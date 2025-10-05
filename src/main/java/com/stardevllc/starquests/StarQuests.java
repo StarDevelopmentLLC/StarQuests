@@ -189,8 +189,8 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         return questRegistry;
     }
     
-    public Quest getQuest(String id) {
-        return this.questRegistry.get(id);
+    public QuestLineRegistry getQuestLineRegistry() {
+        return questLineRegistry;
     }
     
     public QuestPlayer getPlayer(UUID uuid) {
@@ -204,7 +204,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             if (!action.isAvailable(questPlayer)) {
                 return;
             }
-
+            
             //Get or create action data
             QuestActionData actionData = questPlayer.getData(action);
             
