@@ -264,8 +264,8 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
     }
     
     public void handleQuestActionTrigger(Object questActionObject, Player player) {
-        for (Quest quest : this.questRegistry) {
-            for (QuestAction<?> action : quest.getActions().values()) {
+        for (QuestAction<?> action : actionRegistry) {
+            if (action.getType().equals(questActionObject.getClass())) {
                 handleQuestAction(action, questActionObject, player);
             }
         }
