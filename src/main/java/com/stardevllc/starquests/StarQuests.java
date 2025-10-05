@@ -56,7 +56,11 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             }
         }, 1L, 1L);
         
-        questRegistry.register(Quest.builder()
+        QuestLine.Builder woodenLineBuilder = QuestLine.builder()
+                .name("Wooden Resources")
+                .onComplete((questLine, player) -> player.getInventory().addItem(new ItemStack(Material.IRON_INGOT)));
+        
+        woodenLineBuilder.addQuest(Quest.builder()
                 .name("Obtain Workbench")
                 .onComplete((quest, player) -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 2)))
                 .addAction(
@@ -106,11 +110,12 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                 .requiredActions("craft_4_planks")
                 ));
         
-        questRegistry.register(Quest.builder()
+        woodenLineBuilder.addQuest(Quest.builder()
                 .name("Obtain Wooden Pickaxe")
                 .requiredQuests("obtain_workbench")
                 .onComplete((quest, player) -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10)))
-                .addAction(QuestAction.builder(CraftItemEvent.class)
+                .addAction(
+                        QuestAction.builder(CraftItemEvent.class)
                                 .name("Craft 2 Sticks")
                                 .predicate((a, e, playerData) -> {
                                     ItemStack result = e.getInventory().getResult();
@@ -138,6 +143,46 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                 })
                                 .requiredActions("craft_2_sticks")
                 ));
+        
+        questLineRegistry.register(woodenLineBuilder);
+        
+        QuestLine.Builder stoneLineBuilder = QuestLine.builder()
+                .name("Stone Resources")
+                .requiredLines("wooden_resources")
+                .onComplete((questLine, player) -> player.getInventory().addItem(new ItemStack(Material.DIAMOND)));
+        stoneLineBuilder.addQuest(Quest.builder()
+                .name("Stone Pickaxe")
+                .onComplete((quest, player) -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10)))
+                .addAction(QuestAction.builder(BlockBreakEvent.class)
+                        .name("Mine 3 Stone")
+                        .predicate((a, e, playerData) -> {
+                            if (e.getBlock().getType() != Material.STONE) {
+                                return Status.FALSE;
+                            }
+                            
+                            Integer count = playerData.modifyData("count", c -> c + 1, 0);
+                            
+                            if (count < 3) {
+                                return Status.IN_PROGRESS;
+                            }
+                            
+                            return Status.COMPLETE;
+                        })
+                        .onUpdate((a, e, playerData) -> getColors().coloredLegacy(e.getPlayer(), "&eStone Mined: &a" + playerData.getAsInt("count") + " &e/ &d3")))
+                .addAction(QuestAction.builder(CraftItemEvent.class)
+                        .name("Craft Stone Pickaxe")
+                        .predicate((a, e, playerData) -> {
+                            if (e.getInventory().getResult().getType() == Material.STONE_PICKAXE) {
+                                return Status.COMPLETE;
+                            } else {
+                                return Status.FALSE;
+                            }
+                        })
+                        .requiredActions("mine_3_stone")
+                )
+        );
+        
+        questLineRegistry.register(stoneLineBuilder);
     }
     
     public QuestRegistry getQuestRegistry() {
