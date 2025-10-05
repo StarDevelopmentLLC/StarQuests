@@ -100,7 +100,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         
         questRegistry.register(Quest.builder()
                 .name("Obtain Wooden Pickaxe")
-                .prerequisiteQuests("obtain_workbench")
+                .requiredQuests("obtain_workbench")
                 .onComplete((quest, player) -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10)))
                 .addAction(QuestAction.builder(CraftItemEvent.class)
                                 .name("Craft 2 Sticks")
@@ -134,34 +134,6 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
     
     public QuestRegistry getQuestRegistry() {
         return questRegistry;
-    }
-    
-    public boolean isQuestComplete(UUID uuid, Quest quest) {
-        if (quest == null) {
-            return false;
-        }
-        
-        QuestPlayer player = this.players.computeIfAbsent(uuid, QuestPlayer::new);
-        
-        Set<String> playerCompletions = player.getCompletedQuests();
-        boolean contains = playerCompletions.contains(quest.getId());
-        
-        if (!contains) {
-            for (String prerequisiteQuest : quest.getRequiredQuests()) {
-                Quest q = getQuest(prerequisiteQuest);
-                if (!isQuestComplete(uuid, q)) {
-                    return false;
-                }
-            }
-            
-            for (QuestAction<?> action : quest.getActions().values()) {
-                if (!isActionComplete(uuid, action)) {
-                    return false;
-                }
-            }
-        }
-        
-        return contains;
     }
     
     public Quest getQuest(String id) {
@@ -253,7 +225,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             
             questsLoop:
             for (Quest quest : this.questRegistry) {
-                boolean questComplete = isQuestComplete(player.getUniqueId(), quest);
+                boolean questComplete = questPlayer.isQuestComplete(quest);
                 if (questComplete) {
                     continue;
                 }
@@ -264,11 +236,11 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                     }
                 }
                 
-                completeQuest(player.getUniqueId(), quest);
+                questPlayer.completeQuest(quest);
                 if (quest.getOnComplete() != null) {
                     quest.getOnComplete().apply(quest, player);
                 }
-                getColors().coloredLegacy(player, "&aCompleted Quest: &b" + action.getName());
+                getColors().coloredLegacy(player, "&aCompleted Quest: &b" + quest.getName());
             }
         } catch (Throwable ex) {
             ex.printStackTrace();

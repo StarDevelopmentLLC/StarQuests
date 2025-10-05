@@ -5,6 +5,7 @@ import com.stardevllc.starlib.builder.IBuilder;
 import com.stardevllc.starlib.dependency.DependencyInjector;
 import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
+import com.stardevllc.starquests.QuestPlayer;
 import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.quests.function.QuestConsumer;
@@ -73,6 +74,21 @@ public class Quest implements Comparable<Quest> {
         return onComplete;
     }
     
+    public boolean isAvailable(QuestPlayer player) {
+        if (player.isQuestComplete(this)) {
+            return false;
+        }
+        
+        for (String rq : getRequiredQuests()) {
+            Quest requiredQuest = questRegistry.get(rq);
+            if (!player.isQuestComplete(requiredQuest)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
     public static Builder builder() {
         return new Builder();
     }
@@ -86,7 +102,7 @@ public class Quest implements Comparable<Quest> {
         protected String id;
         protected String name;
         protected List<String> description = new LinkedList<>();
-        protected List<String> prerequisiteQuests = new ArrayList<>();
+        protected List<String> requiredQuests = new ArrayList<>();
         protected Map<String, QuestAction<?>> actions = new HashMap<>();
         protected QuestConsumer onComplete;
         
@@ -96,7 +112,7 @@ public class Quest implements Comparable<Quest> {
             this.id = builder.id;
             this.name = builder.id;
             this.description.addAll(builder.description);
-            this.prerequisiteQuests.addAll(builder.prerequisiteQuests);
+            this.requiredQuests.addAll(builder.requiredQuests);
             this.actions.putAll(builder.actions);
             this.onComplete = builder.onComplete;
         }
@@ -117,9 +133,9 @@ public class Quest implements Comparable<Quest> {
             return self();
         }
         
-        public Builder prerequisiteQuests(String... prerequisiteQuests) {
-            this.prerequisiteQuests.clear();
-            this.prerequisiteQuests.addAll(List.of(prerequisiteQuests));
+        public Builder requiredQuests(String... requiredQuests) {
+            this.requiredQuests.clear();
+            this.requiredQuests.addAll(List.of(requiredQuests));
             return self();
         }
         
@@ -162,12 +178,12 @@ public class Quest implements Comparable<Quest> {
                 name = StringHelper.titlize(this.id);
             }
             
-            return new Quest(id, name, description, prerequisiteQuests, onComplete, actions);
+            return new Quest(id, name, description, requiredQuests, onComplete, actions);
         }
         
         @Override
         public Builder clone() {
-            return null;
+            return new Builder(this);
         }
     }
 }
