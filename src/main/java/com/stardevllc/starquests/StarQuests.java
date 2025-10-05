@@ -11,6 +11,7 @@ import com.stardevllc.starquests.cmds.QuestCmd;
 import com.stardevllc.starquests.events.ActionCompleteEvent;
 import com.stardevllc.starquests.events.QuestEvent;
 import com.stardevllc.starquests.quests.Quest;
+import com.stardevllc.starquests.registry.QuestPlayerRegistry;
 import com.stardevllc.starquests.registry.QuestRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -24,11 +25,8 @@ import org.bukkit.inventory.ItemStack;
 import java.util.*;
 
 public class StarQuests extends ExtendedJavaPlugin implements Listener {
-    private Map<UUID, Map<String, QuestActionData>> actionData = new HashMap<>();
-    private Map<UUID, Set<String>> completedActions = new HashMap<>();
-    private Map<UUID, Set<String>> completedQuests = new HashMap<>();
-    
     private QuestRegistry questRegistry;
+    private QuestPlayerRegistry players = new QuestPlayerRegistry();
     
     @Override
     public void onEnable() {
@@ -143,7 +141,9 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             return false;
         }
         
-        Set<String> playerCompletions = this.completedQuests.computeIfAbsent(uuid, u -> new HashSet<>());
+        QuestPlayer player = this.players.computeIfAbsent(uuid, QuestPlayer::new);
+        
+        Set<String> playerCompletions = player.getCompletedQuests();
         boolean contains = playerCompletions.contains(quest.getId());
         
         if (!contains) {
@@ -168,29 +168,28 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         return this.questRegistry.get(id);
     }
     
+    public QuestPlayer getPlayer(UUID uuid) {
+        return this.players.computeIfAbsent(uuid, QuestPlayer::new);
+    }
+    
     public QuestActionData getActionData(UUID uuid, QuestAction<?> action) {
-        Map<String, QuestActionData> data = actionData.computeIfAbsent(uuid, u -> new HashMap<>());
-        QuestActionData playerData = data.computeIfAbsent(action.getId(), id -> new QuestActionData(action.getId()));
-        data.put(action.getId(), playerData);
-        return playerData;
+        return getPlayer(uuid).getData(action);
     }
     
     public boolean isActionComplete(UUID uuid, QuestAction<?> action) {
         if (action == null) {
             return false;
         }
-        Set<String> actionCompletions = this.completedActions.computeIfAbsent(uuid, u -> new HashSet<>());
-        return actionCompletions.contains(action.getId());
+        
+        return getPlayer(uuid).isActionComplete(action);
     }
     
     public void completeAction(UUID uuid, QuestAction<?> action) {
-        Set<String> playerCompletions = this.completedActions.computeIfAbsent(uuid, u -> new HashSet<>());
-        playerCompletions.add(action.getId());
+        getPlayer(uuid).completeAction(action);
     }
     
     public void completeQuest(UUID uuid, Quest quest) {
-        Set<String> playerCompletions = this.completedQuests.computeIfAbsent(uuid, u -> new HashSet<>());
-        playerCompletions.add(quest.getId());
+        getPlayer(uuid).completeQuest(quest);
     }
     
     public boolean isQuestAvailble(UUID uuid, Quest quest) {
@@ -233,7 +232,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
     
     public void handleQuestAction(QuestAction<?> action, Object questActionObject, Player player) {
         try {
-            //Ignore the action if it is not available, which does prereq and quest chests
+            //Ignore the action if it is not available, which does prereq and quest checks
             if (!isActionAvailable(player.getUniqueId(), action)) {
                 return;
             }
