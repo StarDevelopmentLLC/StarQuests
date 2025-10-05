@@ -39,6 +39,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         this.questLineRegistry = new QuestLineRegistry(getInjector());
         getInjector().setInstance(questRegistry);
         getInjector().setInstance(questLineRegistry);
+        getInjector().setInstance(players);
         getEventBus().subscribe(this);
         
         registerListeners(this);

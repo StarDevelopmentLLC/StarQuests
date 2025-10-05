@@ -1,6 +1,7 @@
 package com.stardevllc.starquests.cmds;
 
 import com.stardevllc.starlib.dependency.Inject;
+import com.stardevllc.starquests.QuestPlayer;
 import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.quests.Quest;
@@ -19,14 +20,16 @@ public class QuestCmd implements CommandExecutor {
             return true;
         }
         
+        QuestPlayer questPlayer = plugin.getPlayer(player.getUniqueId());
+        
         boolean hasQuest = false;
         for (Quest quest : plugin.getQuestRegistry()) {
-            if (plugin.isQuestAvailble(player.getUniqueId(), quest)) {
+            if (quest.isAvailable(questPlayer)) {
                 hasQuest = true;
                 plugin.getColors().coloredLegacy(player, "&e" + quest.getName());
                 
                 for (QuestAction<?> action : quest.getActions().values()) {
-                    if (plugin.isActionAvailable(player.getUniqueId(), action)) {
+                    if (action.isAvailable(questPlayer)) {
                         plugin.getColors().coloredLegacy(player, "    &e" + action.getName());
                     }
                 }
