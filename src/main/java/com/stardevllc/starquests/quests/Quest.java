@@ -8,6 +8,7 @@ import com.stardevllc.starlib.helper.StringHelper;
 import com.stardevllc.starquests.QuestPlayer;
 import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.actions.QuestAction;
+import com.stardevllc.starquests.line.QuestLine;
 import com.stardevllc.starquests.quests.function.QuestConsumer;
 import com.stardevllc.starquests.registry.ActionRegistry;
 import com.stardevllc.starquests.registry.QuestRegistry;
@@ -16,6 +17,13 @@ import org.bukkit.ChatColor;
 import java.util.*;
 
 public class Quest implements Comparable<Quest> {
+    private static ActionRegistry primaryActionRegistry;
+    public static void setPrimaryActionRegistry(ActionRegistry registry) {
+        if (primaryActionRegistry == null) {
+            primaryActionRegistry = registry;
+        }
+    }
+    
     @Inject
     protected StarQuests starQuests;
     
@@ -28,6 +36,9 @@ public class Quest implements Comparable<Quest> {
     protected Set<String> requiredQuests = new HashSet<>();
     protected ActionRegistry actions;
     protected QuestConsumer onComplete;
+    
+    @Inject
+    protected QuestLine questLine;
     
     protected DependencyInjector injector;
     
@@ -46,7 +57,10 @@ public class Quest implements Comparable<Quest> {
         this.actions = new ActionRegistry(this.injector);
         if (actions != null) {
             this.actions.putAll(actions);
-            actions.values().forEach(a -> injector.inject(a));
+            actions.values().forEach(a -> {
+                this.actions.register(a);
+                primaryActionRegistry.register(a);
+            });
         }
     }
     
@@ -76,6 +90,10 @@ public class Quest implements Comparable<Quest> {
     
     public boolean isAvailable(QuestPlayer player) {
         if (player.isQuestComplete(this)) {
+            return false;
+        }
+        
+        if (questLine != null && !questLine.isAvailable(player)) {
             return false;
         }
         

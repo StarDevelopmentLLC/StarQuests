@@ -27,6 +27,7 @@ import java.util.*;
 public class StarQuests extends ExtendedJavaPlugin implements Listener {
     private QuestLineRegistry questLineRegistry;
     private QuestRegistry questRegistry;
+    private ActionRegistry actionRegistry;
     private QuestPlayerRegistry players = new QuestPlayerRegistry();
     
     @Override
@@ -35,7 +36,10 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         StarMCLib.registerPluginEventBus(getEventBus());
         StarMCLib.registerPluginInjector(this, getInjector());
         StarEvents.addChildBus(getEventBus());
+        this.actionRegistry = new ActionRegistry(getInjector());
+        Quest.setPrimaryActionRegistry(this.actionRegistry);
         this.questRegistry = new QuestRegistry(getInjector());
+        QuestLine.setPrimaryQuestRegistry(this.questRegistry);
         this.questLineRegistry = new QuestLineRegistry(getInjector());
         getInjector().setInstance(questRegistry);
         getInjector().setInstance(questLineRegistry);
