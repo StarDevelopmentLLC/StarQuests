@@ -2,6 +2,7 @@ package com.stardevllc.starquests;
 
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.actions.QuestActionData;
+import com.stardevllc.starquests.line.QuestLine;
 import com.stardevllc.starquests.quests.Quest;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -14,6 +15,7 @@ public class QuestPlayer {
     private Map<String, QuestActionData> actionData = new HashMap<>();
     private Set<String> completedActions = new HashSet<>();
     private Set<String> completedQuests = new HashSet<>();
+    private Set<String> completedQuestLines = new HashSet<>();
     
     public QuestPlayer(UUID uuid) {
         this.uuid = uuid;
@@ -61,5 +63,17 @@ public class QuestPlayer {
     
     public void completeQuest(Quest quest) {
         this.completedQuests.add(quest.getId());
+    }
+    
+    public Set<String> getCompletedQuestLines() {
+        return completedQuestLines;
+    }
+    
+    public boolean isQuestLineComplete(QuestLine questLine) {
+        return this.completedQuestLines.contains(questLine.getId());
+    }
+    
+    public void completeQuestLine(QuestLine questLine) {
+        this.completedQuestLines.add(questLine.getId());
     }
 }

@@ -10,9 +10,9 @@ import com.stardevllc.starquests.actions.function.QuestActionPredicate.Status;
 import com.stardevllc.starquests.cmds.QuestCmd;
 import com.stardevllc.starquests.events.ActionCompleteEvent;
 import com.stardevllc.starquests.events.QuestEvent;
+import com.stardevllc.starquests.line.QuestLine;
 import com.stardevllc.starquests.quests.Quest;
-import com.stardevllc.starquests.registry.QuestPlayerRegistry;
-import com.stardevllc.starquests.registry.QuestRegistry;
+import com.stardevllc.starquests.registry.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -25,6 +25,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.*;
 
 public class StarQuests extends ExtendedJavaPlugin implements Listener {
+    private QuestLineRegistry questLineRegistry;
     private QuestRegistry questRegistry;
     private QuestPlayerRegistry players = new QuestPlayerRegistry();
     
@@ -35,7 +36,9 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         StarMCLib.registerPluginInjector(this, getInjector());
         StarEvents.addChildBus(getEventBus());
         this.questRegistry = new QuestRegistry(getInjector());
+        this.questLineRegistry = new QuestLineRegistry(getInjector());
         getInjector().setInstance(questRegistry);
+        getInjector().setInstance(questLineRegistry);
         getEventBus().subscribe(this);
         
         registerListeners(this);
@@ -184,6 +187,26 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                     quest.getOnComplete().apply(quest, player);
                 }
                 getColors().coloredLegacy(player, "&aCompleted Quest: &b" + quest.getName());
+            }
+            
+            questLineLoop:
+            for (QuestLine questLine : this.questLineRegistry) {
+                boolean questLineComplete = questPlayer.isQuestLineComplete(questLine);
+                if (questLineComplete) {
+                    continue;
+                }
+                
+                for (Quest quest : questLine.getQuests().values()) {
+                    if (!questPlayer.isQuestComplete(quest)) {
+                        continue questLineLoop;
+                    }
+                }
+                
+                questPlayer.completeQuestLine(questLine);
+                if (questLine.getOnComplete() != null) {
+                    questLine.getOnComplete().apply(questLine, player);
+                }
+                getColors().coloredLegacy(player, "&aCompleted Quest Line: &b" + questLine.getName());
             }
         } catch (Throwable ex) {
             ex.printStackTrace();
