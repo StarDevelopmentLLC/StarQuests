@@ -84,7 +84,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                     
                                     return Status.COMPLETE;
                                 })
-                                .prerequisiteActions("break_4_logs")
+                                .requiredActions("break_4_logs")
                                 .onUpdate((a, e, playerData) -> getColors().coloredLegacy(e.getWhoClicked(), "&ePlanks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d4")),
                         QuestAction.builder(CraftItemEvent.class)
                                 .name("Craft Workbench")
@@ -95,7 +95,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                         return Status.FALSE;
                                     }
                                 })
-                                .prerequisiteActions("craft_4_planks")
+                                .requiredActions("craft_4_planks")
                 ));
         
         questRegistry.register(Quest.builder()
@@ -128,7 +128,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                         return Status.FALSE;
                                     }
                                 })
-                                .prerequisiteActions("craft_2_sticks")
+                                .requiredActions("craft_2_sticks")
                 ));
     }
     
@@ -144,73 +144,16 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         return this.players.computeIfAbsent(uuid, QuestPlayer::new);
     }
     
-    public QuestActionData getActionData(UUID uuid, QuestAction<?> action) {
-        return getPlayer(uuid).getData(action);
-    }
-    
-    public boolean isActionComplete(UUID uuid, QuestAction<?> action) {
-        if (action == null) {
-            return false;
-        }
-        
-        return getPlayer(uuid).isActionComplete(action);
-    }
-    
-    public void completeAction(UUID uuid, QuestAction<?> action) {
-        getPlayer(uuid).completeAction(action);
-    }
-    
-    public void completeQuest(UUID uuid, Quest quest) {
-        getPlayer(uuid).completeQuest(quest);
-    }
-    
-    public boolean isQuestAvailble(UUID uuid, Quest quest) {
-        if (isQuestComplete(uuid, quest)) {
-            return false;
-        }
-        
-        for (String pq : quest.getRequiredQuests()) {
-            Quest prerequisiteQuest = getQuest(pq);
-            if (!isQuestComplete(uuid, prerequisiteQuest)) {
-                return false;
-            }
-        }
-        
-        return true;
-    }
-    
-    public boolean isActionAvailable(UUID uuid, QuestAction<?> action) {
-        if (isActionComplete(uuid, action)) {
-            return false;
-        }
-        
-        if (action.getQuest() != null) {
-            if (!isQuestAvailble(uuid, action.getQuest())) {
-                return false;
-            }
-            
-            for (String pa : action.getPrerequisiteActions()) {
-                QuestAction<?> prerequisiteAction = action.getQuest().getActions().get(pa);
-                if (prerequisiteAction != null) {
-                    if (!isActionComplete(uuid, prerequisiteAction)) {
-                        return false;
-                    }
-                }
-            }
-        }
-        
-        return true;
-    }
-    
     public void handleQuestAction(QuestAction<?> action, Object questActionObject, Player player) {
         try {
+            QuestPlayer questPlayer = getPlayer(player.getUniqueId());
             //Ignore the action if it is not available, which does prereq and quest checks
-            if (!isActionAvailable(player.getUniqueId(), action)) {
+            if (!action.isAvailable(questPlayer)) {
                 return;
             }
 
             //Get or create action data
-            QuestActionData actionData = getActionData(player.getUniqueId(), action);
+            QuestActionData actionData = questPlayer.getData(action);
             
             //Test the action for completion or update the quest
             Status check = action.check(questActionObject, actionData);
@@ -218,7 +161,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 //If complete, mark it as complete
                 Bukkit.getPluginManager().callEvent(new ActionCompleteEvent(action, actionData));
                 action.handleOnComplete(questActionObject, actionData);
-                completeAction(player.getUniqueId(), action);
+                questPlayer.completeAction(action);
                 //Mainly a testing message for now
                 getColors().coloredLegacy(player, "&aCompleted Quest Action: &b" + action.getName());
             }
@@ -231,7 +174,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 }
                 
                 for (QuestAction<?> questAction : quest.getActions().values()) {
-                    if (!isActionComplete(player.getUniqueId(), questAction)) {
+                    if (!questPlayer.isActionComplete(questAction)) {
                         continue questsLoop;
                     }
                 }

@@ -4,6 +4,7 @@ import com.stardevllc.starcore.api.StarColors;
 import com.stardevllc.starlib.builder.IBuilder;
 import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
+import com.stardevllc.starquests.QuestPlayer;
 import com.stardevllc.starquests.actions.function.QuestActionConsumer;
 import com.stardevllc.starquests.actions.function.QuestActionPredicate;
 import com.stardevllc.starquests.actions.function.QuestActionPredicate.Status;
@@ -23,19 +24,19 @@ public class QuestAction<T> {
     protected List<String> description = new LinkedList<>();
     protected Class<T> type;
     protected QuestActionPredicate<T> predicate;
-    protected List<String> prerequisiteActions = new ArrayList<>();
+    protected List<String> requiredActions = new ArrayList<>();
     protected QuestActionConsumer<T> onUpdate, onComplete;
     
     @Inject
     protected Quest quest;
     
-    public QuestAction(String id, String name, List<String> description, Class<T> type, QuestActionPredicate<T> predicate, List<String> prerequisiteActions, QuestActionConsumer<T> onUpdate, QuestActionConsumer<T> onComplete) {
+    public QuestAction(String id, String name, List<String> description, Class<T> type, QuestActionPredicate<T> predicate, List<String> requiredActions, QuestActionConsumer<T> onUpdate, QuestActionConsumer<T> onComplete) {
         this.id = id;
         this.name = name;
         this.description.addAll(description);
         this.type = type;
         this.predicate = predicate;
-        this.prerequisiteActions.addAll(prerequisiteActions);
+        this.requiredActions.addAll(requiredActions);
         this.onUpdate = onUpdate;
         this.onComplete = onComplete;
     }
@@ -95,12 +96,35 @@ public class QuestAction<T> {
         return predicate;
     }
     
-    public List<String> getPrerequisiteActions() {
-        return prerequisiteActions;
+    public List<String> getRequiredActions() {
+        return requiredActions;
     }
     
     public Quest getQuest() {
         return quest;
+    }
+    
+    public boolean isAvailable(QuestPlayer player) {
+        if (player.isActionComplete(this)) {
+            return false;
+        }
+        
+        if (getQuest() != null) {
+            if (!getQuest().isAvailable(player)) {
+                return false;
+            }
+            
+            for (String ra : getRequiredActions()) {
+                QuestAction<?> requiredAction = getQuest().getActions().get(ra);
+                if (requiredAction != null) {
+                    if (!player.isActionComplete(requiredAction)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        
+        return true;
     }
     
     public static <T> Builder<T> builder(Class<T> type) {
@@ -113,7 +137,7 @@ public class QuestAction<T> {
         protected String name;
         protected List<String> description = new LinkedList<>();
         protected QuestActionPredicate<T> predicate;
-        protected List<String> prerequisiteActions = new ArrayList<>();
+        protected List<String> requiredActions = new ArrayList<>();
         protected QuestActionConsumer<T> onUpdate, onComplete;
         
         public Builder(Class<T> type) {
@@ -126,7 +150,7 @@ public class QuestAction<T> {
             this.name = builder.name;
             this.description.addAll(builder.description);
             this.predicate = builder.predicate;
-            this.prerequisiteActions = new LinkedList<>(builder.prerequisiteActions);
+            this.requiredActions = new LinkedList<>(builder.requiredActions);
             this.onUpdate = builder.onUpdate;
             this.onComplete = builder.onComplete;
         }
@@ -154,9 +178,9 @@ public class QuestAction<T> {
             return self();
         }
         
-        public Builder<T> prerequisiteActions(String... prerequisiteActions) {
+        public Builder<T> requiredActions(String... prerequisiteActions) {
             if (prerequisiteActions != null) {
-                this.prerequisiteActions = new LinkedList<>(Arrays.asList(prerequisiteActions));
+                this.requiredActions = new LinkedList<>(Arrays.asList(prerequisiteActions));
             }
             
             return self();
@@ -182,7 +206,7 @@ public class QuestAction<T> {
                 name = StringHelper.titlize(this.id);
             }
             
-            return new QuestAction<>(id, name, description, type, predicate, prerequisiteActions, onUpdate, onComplete);
+            return new QuestAction<>(id, name, description, type, predicate, requiredActions, onUpdate, onComplete);
         }
         
         @Override
