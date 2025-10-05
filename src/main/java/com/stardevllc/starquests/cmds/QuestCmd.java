@@ -19,7 +19,7 @@ public class QuestCmd implements CommandExecutor {
             return true;
         }
         
-        for (Quest quest : plugin.getQuests().values()) {
+        for (Quest quest : plugin.getQuestRegistry()) {
             if (plugin.isQuestComplete(player.getUniqueId(), quest)) {
                 plugin.getColors().coloredLegacy(player, "&a" + quest.getName());
             } else if (plugin.isQuestAvailble(player.getUniqueId(), quest)) {

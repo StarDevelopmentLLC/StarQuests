@@ -28,7 +28,7 @@ public final class QuestUtils {
         if (eventFields.containsKey(event.getClass())) {
             fields = eventFields.get(event.getClass());
         } else {
-            fields = ReflectionHelper.getClassFields(event.getClass());
+            fields = new HashSet<>(ReflectionHelper.getClassFields(event.getClass()).values());
             eventFields.put(event.getClass(), Collections.unmodifiableSet(fields));
         }
         

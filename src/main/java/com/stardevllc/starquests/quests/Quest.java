@@ -8,35 +8,41 @@ import com.stardevllc.starlib.helper.StringHelper;
 import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.quests.function.QuestConsumer;
+import com.stardevllc.starquests.registry.ActionRegistry;
+import com.stardevllc.starquests.registry.QuestRegistry;
 import org.bukkit.ChatColor;
 
 import java.util.*;
 
-public class Quest {
+public class Quest implements Comparable<Quest> {
     @Inject
     protected StarQuests starQuests;
+    
+    @Inject
+    protected QuestRegistry questRegistry;
     
     protected String id;
     protected String name;
     protected List<String> description = new LinkedList<>();
-    protected Set<String> prerequisiteQuests = new HashSet<>();
-    protected Map<String, QuestAction<?>> actions = new LinkedHashMap<>();
+    protected Set<String> requiredQuests = new HashSet<>();
+    protected ActionRegistry actions;
     protected QuestConsumer onComplete;
     
     protected DependencyInjector injector;
     
-    public Quest(String id, String name, List<String> description, List<String> prerequisiteQuests, QuestConsumer onComplete) {
-        this(id, name, description, prerequisiteQuests, onComplete, null);
+    public Quest(String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer onComplete) {
+        this(id, name, description, requiredQuests, onComplete, null);
     }
     
-    public Quest(String id, String name, List<String> description, List<String> prerequisiteQuests, QuestConsumer onComplete, Map<String, QuestAction<?>> actions) {
+    public Quest(String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer onComplete, Map<String, QuestAction<?>> actions) {
         this.id = id;
         this.name = name;
         this.description.addAll(description);
-        this.prerequisiteQuests.addAll(prerequisiteQuests);
+        this.requiredQuests.addAll(requiredQuests);
         this.onComplete = onComplete;
         this.injector = DependencyInjector.create();
         this.injector.setInstance(this);
+        this.actions = new ActionRegistry(this.injector);
         if (actions != null) {
             this.actions.putAll(actions);
             actions.values().forEach(a -> injector.inject(a));
@@ -55,26 +61,25 @@ public class Quest {
         return new LinkedList<>(description);
     }
     
-    public List<String> getPrerequisiteQuests() {
-        return new ArrayList<>(prerequisiteQuests);
+    public List<String> getRequiredQuests() {
+        return new ArrayList<>(requiredQuests);
     }
     
-    public Map<String, QuestAction<?>> getActions() {
-        return new HashMap<>(actions);
+    public ActionRegistry getActions() {
+        return actions;
     }
     
     public QuestConsumer getOnComplete() {
         return onComplete;
     }
     
-    public Quest addAction(QuestAction<?> action) {
-        this.actions.put(action.getId(), action);
-        this.injector.inject(action);
-        return this;
-    }
-    
     public static Builder builder() {
         return new Builder();
+    }
+    
+    @Override
+    public int compareTo(Quest o) {
+        return this.id.compareTo(o.id);
     }
     
     public static class Builder implements IBuilder<Quest, Builder> {

@@ -11,6 +11,7 @@ import com.stardevllc.starquests.cmds.QuestCmd;
 import com.stardevllc.starquests.events.ActionCompleteEvent;
 import com.stardevllc.starquests.events.QuestEvent;
 import com.stardevllc.starquests.quests.Quest;
+import com.stardevllc.starquests.registry.QuestRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -23,11 +24,11 @@ import org.bukkit.inventory.ItemStack;
 import java.util.*;
 
 public class StarQuests extends ExtendedJavaPlugin implements Listener {
-    private Map<String, QuestAction<?>> actions = new HashMap<>();
     private Map<UUID, Map<String, QuestActionData>> actionData = new HashMap<>();
     private Map<UUID, Set<String>> completedActions = new HashMap<>();
-    private Map<String, Quest> quests = new HashMap<>();
     private Map<UUID, Set<String>> completedQuests = new HashMap<>();
+    
+    private QuestRegistry questRegistry;
     
     @Override
     public void onEnable() {
@@ -35,6 +36,8 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         StarMCLib.registerPluginEventBus(getEventBus());
         StarMCLib.registerPluginInjector(this, getInjector());
         StarEvents.addChildBus(getEventBus());
+        this.questRegistry = new QuestRegistry(getInjector());
+        getInjector().setInstance(questRegistry);
         getEventBus().subscribe(this);
         
         registerListeners(this);
@@ -47,7 +50,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             }
         }, 1L, 1L);
         
-        this.addQuest(Quest.builder()
+        questRegistry.register(Quest.builder()
                 .name("Obtain Workbench")
                 .onComplete((quest, player) -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 2)))
                 .addAction(
@@ -95,10 +98,9 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                     }
                                 })
                                 .prerequisiteActions("craft_4_planks")
-                )
-                .build());
+                ));
         
-        this.addQuest(Quest.builder()
+        questRegistry.register(Quest.builder()
                 .name("Obtain Wooden Pickaxe")
                 .prerequisiteQuests("obtain_workbench")
                 .onComplete((quest, player) -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10)))
@@ -129,31 +131,11 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                     }
                                 })
                                 .prerequisiteActions("craft_2_sticks")
-                )
-                .build());
-        
-        for (Quest quest : this.quests.values()) {
-            getLogger().info("Quest: " + quest.getId());
-            for (QuestAction<?> action : quest.getActions().values()) {
-                getLogger().info("  Action: " + action.getId());
-            }
-        }
+                ));
     }
     
-    public void addQuest(Quest quest) {
-        this.quests.put(quest.getId(), getInjector().inject(quest));
-    }
-    
-    public Map<String, Quest> getQuests() {
-        return new HashMap<>(quests);
-    }
-    
-    public void addAction(QuestAction<?> action) {
-        if (action == null) {
-            return;
-        }
-        
-        this.actions.put(action.getId(), action);
+    public QuestRegistry getQuestRegistry() {
+        return questRegistry;
     }
     
     public boolean isQuestComplete(UUID uuid, Quest quest) {
@@ -165,7 +147,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         boolean contains = playerCompletions.contains(quest.getId());
         
         if (!contains) {
-            for (String prerequisiteQuest : quest.getPrerequisiteQuests()) {
+            for (String prerequisiteQuest : quest.getRequiredQuests()) {
                 Quest q = getQuest(prerequisiteQuest);
                 if (!isQuestComplete(uuid, q)) {
                     return false;
@@ -183,11 +165,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
     }
     
     public Quest getQuest(String id) {
-        return this.quests.get(id);
-    }
-    
-    public QuestAction<?> getQuestAction(String id) {
-        return this.actions.get(id);
+        return this.questRegistry.get(id);
     }
     
     public QuestActionData getActionData(UUID uuid, QuestAction<?> action) {
@@ -220,7 +198,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             return false;
         }
         
-        for (String pq : quest.getPrerequisiteQuests()) {
+        for (String pq : quest.getRequiredQuests()) {
             Quest prerequisiteQuest = getQuest(pq);
             if (!isQuestComplete(uuid, prerequisiteQuest)) {
                 return false;
@@ -239,18 +217,13 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             if (!isQuestAvailble(uuid, action.getQuest())) {
                 return false;
             }
-        }
-        
-        for (String pa : action.getPrerequisiteActions()) {
-            QuestAction<?> prerequisiteAction;
-            if (action.getQuest() != null) {
-                prerequisiteAction = action.getQuest().getActions().get(pa);
-            } else {
-                prerequisiteAction = getQuestAction(pa);
-            }
-            if (prerequisiteAction != null) {
-                if (!isActionComplete(uuid, prerequisiteAction)) {
-                    return false;
+            
+            for (String pa : action.getPrerequisiteActions()) {
+                QuestAction<?> prerequisiteAction = action.getQuest().getActions().get(pa);
+                if (prerequisiteAction != null) {
+                    if (!isActionComplete(uuid, prerequisiteAction)) {
+                        return false;
+                    }
                 }
             }
         }
@@ -280,7 +253,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             }
             
             questsLoop:
-            for (Quest quest : this.quests.values()) {
+            for (Quest quest : this.questRegistry) {
                 boolean questComplete = isQuestComplete(player.getUniqueId(), quest);
                 if (questComplete) {
                     continue;
@@ -304,12 +277,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
     }
     
     public void handleQuestActionTrigger(Object questActionObject, Player player) {
-        //Loop through all actions to check them
-        for (QuestAction<?> action : this.actions.values()) {
-            handleQuestAction(action, questActionObject, player);
-        }
-        
-        for (Quest quest : this.quests.values()) {
+        for (Quest quest : this.questRegistry) {
             for (QuestAction<?> action : quest.getActions().values()) {
                 handleQuestAction(action, questActionObject, player);
             }
