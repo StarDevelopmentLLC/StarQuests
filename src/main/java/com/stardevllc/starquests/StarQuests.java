@@ -216,7 +216,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 action.handleOnComplete(questActionObject, actionData);
                 questPlayer.completeAction(action);
                 //Mainly a testing message for now
-                getColors().coloredLegacy(player, "&aCompleted Quest Action: &b" + action.getName());
+                getColors().coloredLegacy(player, "&c&l[DEBUG] &aCompleted Quest Action: &b" + action.getName());
             }
             
             questsLoop:
@@ -236,7 +236,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 if (quest.getOnComplete() != null) {
                     quest.getOnComplete().apply(quest, player);
                 }
-                getColors().coloredLegacy(player, "&aCompleted Quest: &b" + quest.getName());
+                getColors().coloredLegacy(player, "&c&l[DEBUG] &aCompleted Quest: &b" + quest.getName());
             }
             
             questLineLoop:
@@ -256,7 +256,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 if (questLine.getOnComplete() != null) {
                     questLine.getOnComplete().apply(questLine, player);
                 }
-                getColors().coloredLegacy(player, "&aCompleted Quest Line: &b" + questLine.getName());
+                getColors().coloredLegacy(player, "&c&l[DEBUG] &aCompleted Quest Line: &b" + questLine.getName());
             }
         } catch (Throwable ex) {
             ex.printStackTrace();
