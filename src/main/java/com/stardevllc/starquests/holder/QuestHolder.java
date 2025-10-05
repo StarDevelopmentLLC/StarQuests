@@ -1,36 +1,58 @@
-package com.stardevllc.starquests;
+package com.stardevllc.starquests.holder;
 
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.actions.QuestActionData;
 import com.stardevllc.starquests.line.QuestLine;
 import com.stardevllc.starquests.quests.Quest;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.*;
+import java.util.function.Function;
 
-public class QuestPlayer {
-    private UUID uuid;
+public class QuestHolder<T> {
     
-    private Map<String, QuestActionData> actionData = new HashMap<>();
-    private Set<String> completedActions = new HashSet<>();
-    private Set<String> completedQuests = new HashSet<>();
-    private Set<String> completedQuestLines = new HashSet<>();
-    
-    public QuestPlayer(UUID uuid) {
-        this.uuid = uuid;
+    private static Function<String, String> colorFunction;
+    public static void setColorFunction(Function<String, String> function) {
+        if (colorFunction == null) {
+            colorFunction = function;
+        }
     }
     
-    public QuestPlayer(Player player) {
-        this.uuid = player.getUniqueId();
+    protected static String color(String text) {
+        if (colorFunction != null) {
+            return colorFunction.apply(text);
+        }
+        
+        return text;
     }
     
-    public UUID getUuid() {
-        return uuid;
+    protected String key;
+    protected Map<String, QuestActionData> actionData = new HashMap<>();
+    protected Set<String> completedActions = new HashSet<>();
+    protected Set<String> completedQuests = new HashSet<>();
+    protected Set<String> completedQuestLines = new HashSet<>();
+    
+    protected T value;
+    
+    public QuestHolder(String key, T value) {
+        this.key = key;
+        this.value = value;
+    }
+    
+    public void sendMessage(String message) {
+        
     }
     
     public Optional<Player> getPlayer() {
-        return Optional.ofNullable(Bukkit.getPlayer(uuid));
+        return Optional.empty();
+    }
+    
+    public String getKey() {
+        return key;
+    }
+    
+    public T getValue() {
+        return value;
     }
     
     public Map<String, QuestActionData> getActionData() {

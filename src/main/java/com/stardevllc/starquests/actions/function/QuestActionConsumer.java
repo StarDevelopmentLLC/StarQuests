@@ -5,5 +5,5 @@ import com.stardevllc.starquests.actions.QuestActionData;
 
 @FunctionalInterface
 public interface QuestActionConsumer<T> {
-    void apply(QuestAction<T> action, T triggerData, QuestActionData data);
+    void apply(QuestAction<T> action, T triggerData, QuestActionData actionData);
 }

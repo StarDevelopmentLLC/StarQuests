@@ -4,7 +4,7 @@ import com.stardevllc.starcore.api.StarColors;
 import com.stardevllc.starlib.builder.IBuilder;
 import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
-import com.stardevllc.starquests.QuestPlayer;
+import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.actions.function.QuestActionConsumer;
 import com.stardevllc.starquests.actions.function.QuestActionPredicate;
 import com.stardevllc.starquests.actions.function.QuestActionPredicate.Status;
@@ -104,20 +104,20 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
         return quest;
     }
     
-    public boolean isAvailable(QuestPlayer player) {
-        if (player.isActionComplete(this)) {
+    public boolean isAvailable(QuestHolder<?> holder) {
+        if (holder.isActionComplete(this)) {
             return false;
         }
         
         if (getQuest() != null) {
-            if (!getQuest().isAvailable(player)) {
+            if (!getQuest().isAvailable(holder)) {
                 return false;
             }
             
             for (String ra : getRequiredActions()) {
                 QuestAction<?> requiredAction = getQuest().getActions().get(ra);
                 if (requiredAction != null) {
-                    if (!player.isActionComplete(requiredAction)) {
+                    if (!holder.isActionComplete(requiredAction)) {
                         return false;
                     }
                 }

@@ -5,7 +5,7 @@ import com.stardevllc.starquests.actions.QuestActionData;
 
 @FunctionalInterface
 public interface QuestActionPredicate<T> {
-    Status test(QuestAction<T> action, T triggerData, QuestActionData data);
+    Status test(QuestAction<T> action, T triggerData, QuestActionData actionData);
     
     enum Status {
         COMPLETE, IN_PROGRESS, FALSE, ERROR

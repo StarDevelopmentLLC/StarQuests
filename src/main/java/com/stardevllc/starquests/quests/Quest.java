@@ -5,9 +5,9 @@ import com.stardevllc.starlib.builder.IBuilder;
 import com.stardevllc.starlib.dependency.DependencyInjector;
 import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
-import com.stardevllc.starquests.QuestPlayer;
-import com.stardevllc.starquests.StarQuests;
+import com.stardevllc.starquests.*;
 import com.stardevllc.starquests.actions.QuestAction;
+import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.line.QuestLine;
 import com.stardevllc.starquests.quests.function.QuestConsumer;
 import com.stardevllc.starquests.registry.ActionRegistry;
@@ -88,18 +88,18 @@ public class Quest implements Comparable<Quest> {
         return onComplete;
     }
     
-    public boolean isAvailable(QuestPlayer player) {
-        if (player.isQuestComplete(this)) {
+    public boolean isAvailable(QuestHolder<?> holder) {
+        if (holder.isQuestComplete(this)) {
             return false;
         }
         
-        if (questLine != null && !questLine.isAvailable(player)) {
+        if (questLine != null && !questLine.isAvailable(holder)) {
             return false;
         }
         
         for (String rq : getRequiredQuests()) {
             Quest requiredQuest = questRegistry.get(rq);
-            if (!player.isQuestComplete(requiredQuest)) {
+            if (!holder.isQuestComplete(requiredQuest)) {
                 return false;
             }
         }

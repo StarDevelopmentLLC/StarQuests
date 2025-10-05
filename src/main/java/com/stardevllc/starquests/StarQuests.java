@@ -10,6 +10,8 @@ import com.stardevllc.starquests.actions.function.QuestActionPredicate.Status;
 import com.stardevllc.starquests.cmds.QuestCmd;
 import com.stardevllc.starquests.events.ActionCompleteEvent;
 import com.stardevllc.starquests.events.QuestEvent;
+import com.stardevllc.starquests.holder.QuestHolder;
+import com.stardevllc.starquests.holder.QuestPlayer;
 import com.stardevllc.starquests.line.QuestLine;
 import com.stardevllc.starquests.quests.Quest;
 import com.stardevllc.starquests.registry.*;
@@ -28,7 +30,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
     private QuestLineRegistry questLineRegistry;
     private QuestRegistry questRegistry;
     private ActionRegistry actionRegistry;
-    private QuestPlayerRegistry players = new QuestPlayerRegistry();
+    private QuestHolderRegistry holders = new QuestHolderRegistry();
     
     @Override
     public void onEnable() {
@@ -41,9 +43,10 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         this.questRegistry = new QuestRegistry(getInjector());
         QuestLine.setPrimaryQuestRegistry(this.questRegistry);
         this.questLineRegistry = new QuestLineRegistry(getInjector());
+        QuestHolder.setColorFunction(text -> getColors().colorLegacy(text));
         getInjector().setInstance(questRegistry);
         getInjector().setInstance(questLineRegistry);
-        getInjector().setInstance(players);
+        getInjector().setInstance(holders);
         getEventBus().subscribe(this);
         
         registerListeners(this);
@@ -52,26 +55,26 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         
         getServer().getScheduler().runTaskTimer(this, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                handleQuestActionTrigger(player, player);
+                handleQuestActionTrigger(player, getPlayer(player.getUniqueId()));
             }
         }, 1L, 1L);
         
         QuestLine.Builder woodenLineBuilder = QuestLine.builder()
                 .name("Wooden Resources")
-                .onComplete((questLine, player) -> player.getInventory().addItem(new ItemStack(Material.IRON_INGOT)));
+                .onComplete((questLine, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.IRON_INGOT))));
         
         woodenLineBuilder.addQuest(Quest.builder()
                 .name("Obtain Workbench")
-                .onComplete((quest, player) -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 2)))
+                .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 2))))
                 .addAction(
                         QuestAction.builder(BlockBreakEvent.class)
                                 .name("Break 4 Logs")
-                                .predicate((a, e, playerData) -> {
+                                .predicate((a, e, actionData) -> {
                                     if (!e.getBlock().getType().name().contains("_LOG")) {
                                         return Status.FALSE;
                                     }
                                     
-                                    Integer count = playerData.modifyData("count", c -> c + 1, 0);
+                                    Integer count = actionData.modifyData("count", c -> c + 1, 0);
                                     
                                     if (count < 4) {
                                         return Status.IN_PROGRESS;
@@ -79,7 +82,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                     
                                     return Status.COMPLETE;
                                 })
-                                .onUpdate((a, e, playerData) -> getColors().coloredLegacy(e.getPlayer(), "&eLogs Broken: &a" + playerData.getAsInt("count") + " &e/ &d4")),
+                                .onUpdate((a, e, actionData) -> getColors().coloredLegacy(e.getPlayer(), "&eLogs Broken: &a" + actionData.getAsInt("count") + " &e/ &d4")),
                         QuestAction.builder(CraftItemEvent.class)
                                 .name("Craft 4 Planks")
                                 .predicate((a, e, playerData) -> {
@@ -100,7 +103,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                 .onUpdate((a, e, playerData) -> getColors().coloredLegacy(e.getWhoClicked(), "&ePlanks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d4")),
                         QuestAction.builder(CraftItemEvent.class)
                                 .name("Craft Workbench")
-                                .predicate((a, e, playerData) -> {
+                                .predicate((a, e, actionData) -> {
                                     if (e.getInventory().getResult().getType() == Material.CRAFTING_TABLE) {
                                         return Status.COMPLETE;
                                     } else {
@@ -113,7 +116,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         woodenLineBuilder.addQuest(Quest.builder()
                 .name("Obtain Wooden Pickaxe")
                 .requiredQuests("obtain_workbench")
-                .onComplete((quest, player) -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10)))
+                .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10))))
                 .addAction(
                         QuestAction.builder(CraftItemEvent.class)
                                 .name("Craft 2 Sticks")
@@ -149,18 +152,18 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         QuestLine.Builder stoneLineBuilder = QuestLine.builder()
                 .name("Stone Resources")
                 .requiredLines("wooden_resources")
-                .onComplete((questLine, player) -> player.getInventory().addItem(new ItemStack(Material.DIAMOND)));
+                .onComplete((questLine, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.DIAMOND))));
         stoneLineBuilder.addQuest(Quest.builder()
                 .name("Stone Pickaxe")
-                .onComplete((quest, player) -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10)))
+                .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10))))
                 .addAction(QuestAction.builder(BlockBreakEvent.class)
                         .name("Mine 3 Stone")
-                        .predicate((a, e, playerData) -> {
+                        .predicate((a, e, actionData) -> {
                             if (e.getBlock().getType() != Material.STONE) {
                                 return Status.FALSE;
                             }
                             
-                            Integer count = playerData.modifyData("count", c -> c + 1, 0);
+                            Integer count = actionData.modifyData("count", c -> c + 1, 0);
                             
                             if (count < 3) {
                                 return Status.IN_PROGRESS;
@@ -168,10 +171,10 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                             
                             return Status.COMPLETE;
                         })
-                        .onUpdate((a, e, playerData) -> getColors().coloredLegacy(e.getPlayer(), "&eStone Mined: &a" + playerData.getAsInt("count") + " &e/ &d3")))
+                        .onUpdate((a, e, actionData) -> getColors().coloredLegacy(e.getPlayer(), "&eStone Mined: &a" + actionData.getAsInt("count") + " &e/ &d3")))
                 .addAction(QuestAction.builder(CraftItemEvent.class)
                         .name("Craft Stone Pickaxe")
-                        .predicate((a, e, playerData) -> {
+                        .predicate((a, e, actionData) -> {
                             if (e.getInventory().getResult().getType() == Material.STONE_PICKAXE) {
                                 return Status.COMPLETE;
                             } else {
@@ -193,20 +196,30 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         return questLineRegistry;
     }
     
-    public QuestPlayer getPlayer(UUID uuid) {
-        return this.players.computeIfAbsent(uuid, QuestPlayer::new);
+    public QuestHolder<?> getHolder(String key) {
+        return this.holders.get(key);
     }
     
-    public void handleQuestAction(QuestAction<?> action, Object questActionObject, Player player) {
+    public QuestPlayer getPlayer(UUID uuid) {
+        QuestHolder<?> holder = this.holders.get(uuid.toString());
+        if (holder instanceof QuestPlayer questPlayer) {
+            return questPlayer;
+        }
+        
+        QuestPlayer questPlayer = new QuestPlayer(uuid);
+        this.holders.register(questPlayer);
+        return questPlayer;
+    }
+    
+    public void handleQuestAction(QuestAction<?> action, Object questActionObject, QuestHolder<?> holder) {
         try {
-            QuestPlayer questPlayer = getPlayer(player.getUniqueId());
             //Ignore the action if it is not available, which does prereq and quest checks
-            if (!action.isAvailable(questPlayer)) {
+            if (!action.isAvailable(holder)) {
                 return;
             }
             
             //Get or create action data
-            QuestActionData actionData = questPlayer.getData(action);
+            QuestActionData actionData = holder.getData(action);
             
             //Test the action for completion or update the quest
             Status check = action.check(questActionObject, actionData);
@@ -214,59 +227,60 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 //If complete, mark it as complete
                 Bukkit.getPluginManager().callEvent(new ActionCompleteEvent(action, actionData));
                 action.handleOnComplete(questActionObject, actionData);
-                questPlayer.completeAction(action);
+                holder.completeAction(action);
                 //Mainly a testing message for now
-                getColors().coloredLegacy(player, "&c&l[DEBUG] &aCompleted Quest Action: &b" + action.getName());
+                holder.sendMessage("&c&l[DEBUG] &aCompleted Quest Action: &b" + action.getName());
             }
             
             questsLoop:
             for (Quest quest : this.questRegistry) {
-                boolean questComplete = questPlayer.isQuestComplete(quest);
+                boolean questComplete = holder.isQuestComplete(quest);
                 if (questComplete) {
                     continue;
                 }
                 
                 for (QuestAction<?> questAction : quest.getActions().values()) {
-                    if (!questPlayer.isActionComplete(questAction)) {
+                    if (!holder.isActionComplete(questAction)) {
                         continue questsLoop;
                     }
                 }
                 
-                questPlayer.completeQuest(quest);
+                holder.completeQuest(quest);
                 if (quest.getOnComplete() != null) {
-                    quest.getOnComplete().apply(quest, player);
+                    quest.getOnComplete().apply(quest, holder);
                 }
-                getColors().coloredLegacy(player, "&c&l[DEBUG] &aCompleted Quest: &b" + quest.getName());
+                holder.sendMessage("&c&l[DEBUG] &aCompleted Quest: &b" + quest.getName());
             }
             
             questLineLoop:
             for (QuestLine questLine : this.questLineRegistry) {
-                boolean questLineComplete = questPlayer.isQuestLineComplete(questLine);
+                boolean questLineComplete = holder.isQuestLineComplete(questLine);
                 if (questLineComplete) {
                     continue;
                 }
                 
                 for (Quest quest : questLine.getQuests().values()) {
-                    if (!questPlayer.isQuestComplete(quest)) {
+                    if (!holder.isQuestComplete(quest)) {
                         continue questLineLoop;
                     }
                 }
                 
-                questPlayer.completeQuestLine(questLine);
+                holder.completeQuestLine(questLine);
                 if (questLine.getOnComplete() != null) {
-                    questLine.getOnComplete().apply(questLine, player);
+                    questLine.getOnComplete().apply(questLine, holder);
                 }
-                getColors().coloredLegacy(player, "&c&l[DEBUG] &aCompleted Quest Line: &b" + questLine.getName());
+                
+                holder.sendMessage("&c&l[DEBUG] &aCompleted Quest Line: &b" + questLine.getName());
             }
         } catch (Throwable ex) {
             ex.printStackTrace();
         }
     }
     
-    public void handleQuestActionTrigger(Object questActionObject, Player player) {
+    public void handleQuestActionTrigger(Object questActionObject, QuestHolder<?> holder) {
         for (QuestAction<?> action : actionRegistry) {
             if (action.getType().equals(questActionObject.getClass())) {
-                handleQuestAction(action, questActionObject, player);
+                handleQuestAction(action, questActionObject, holder);
             }
         }
     }
@@ -278,6 +292,6 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             return;
         }
         
-        QuestUtils.getPlayerFromEvent(e).ifPresent(player -> handleQuestActionTrigger(e, player));
+        QuestUtils.getPlayerFromEvent(e).ifPresent(player -> handleQuestActionTrigger(e, getPlayer(player.getUniqueId())));
     }
 }

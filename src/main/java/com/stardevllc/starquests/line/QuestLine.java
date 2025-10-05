@@ -5,8 +5,8 @@ import com.stardevllc.starlib.builder.IBuilder;
 import com.stardevllc.starlib.dependency.DependencyInjector;
 import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
-import com.stardevllc.starquests.QuestPlayer;
-import com.stardevllc.starquests.StarQuests;
+import com.stardevllc.starquests.*;
+import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.line.function.QuestLineConsumer;
 import com.stardevllc.starquests.quests.Quest;
 import com.stardevllc.starquests.registry.QuestLineRegistry;
@@ -90,14 +90,14 @@ public class QuestLine {
         return onComplete;
     }
     
-    public boolean isAvailable(QuestPlayer player) {
-        if (player.isQuestLineComplete(this)) {
+    public boolean isAvailable(QuestHolder<?> holder) {
+        if (holder.isQuestLineComplete(this)) {
             return false;
         }
         
         for (String rq : getRequiredLines()) {
             QuestLine requiredQuestLine = questLineRegistry.get(rq);
-            if (!player.isQuestLineComplete(requiredQuestLine)) {
+            if (!holder.isQuestLineComplete(requiredQuestLine)) {
                 return false;
             }
         }
