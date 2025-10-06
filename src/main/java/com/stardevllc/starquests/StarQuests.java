@@ -24,7 +24,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.*;
+import java.util.UUID;
 
 public class StarQuests extends ExtendedJavaPlugin implements Listener {
     private QuestLineRegistry questLineRegistry;
@@ -69,7 +69,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 .addAction(
                         QuestAction.builder(BlockBreakEvent.class)
                                 .name("Break 4 Logs")
-                                .predicate((a, e, actionData) -> {
+                                .predicate((a, e, holder, actionData) -> {
                                     if (!e.getBlock().getType().name().contains("_LOG")) {
                                         return Status.FALSE;
                                     }
@@ -82,10 +82,10 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                     
                                     return Status.COMPLETE;
                                 })
-                                .onUpdate((a, e, actionData) -> getColors().coloredLegacy(e.getPlayer(), "&eLogs Broken: &a" + actionData.getAsInt("count") + " &e/ &d4")),
+                                .onUpdate((a, e, holder, actionData) -> holder.sendMessage("&eLogs Broken: &a" + actionData.getAsInt("count") + " &e/ &d4")),
                         QuestAction.builder(CraftItemEvent.class)
                                 .name("Craft 4 Planks")
-                                .predicate((a, e, playerData) -> {
+                                .predicate((a, e, holder, playerData) -> {
                                     ItemStack result = e.getInventory().getResult();
                                     if (!result.getType().name().contains("_PLANK")) {
                                         return Status.FALSE;
@@ -100,10 +100,10 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                     return Status.COMPLETE;
                                 })
                                 .requiredActions("break_4_logs")
-                                .onUpdate((a, e, playerData) -> getColors().coloredLegacy(e.getWhoClicked(), "&ePlanks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d4")),
+                                .onUpdate((a, e, holder, playerData) -> holder.sendMessage("&ePlanks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d4")),
                         QuestAction.builder(CraftItemEvent.class)
                                 .name("Craft Workbench")
-                                .predicate((a, e, actionData) -> {
+                                .predicate((a, e, holder, actionData) -> {
                                     if (e.getInventory().getResult().getType() == Material.CRAFTING_TABLE) {
                                         return Status.COMPLETE;
                                     } else {
@@ -120,7 +120,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 .addAction(
                         QuestAction.builder(CraftItemEvent.class)
                                 .name("Craft 2 Sticks")
-                                .predicate((a, e, playerData) -> {
+                                .predicate((a, e, holder, playerData) -> {
                                     ItemStack result = e.getInventory().getResult();
                                     if (result.getType() != Material.STICK) {
                                         return Status.FALSE;
@@ -134,10 +134,10 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                     
                                     return Status.COMPLETE;
                                 })
-                                .onUpdate((a, e, playerData) -> getColors().coloredLegacy(e.getWhoClicked(), "&eSticks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d2")),
+                                .onUpdate((a, e, holder, playerData) -> holder.sendMessage("&eSticks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d2")),
                         QuestAction.builder(CraftItemEvent.class)
                                 .name("Craft a Wooden Pickaxe")
-                                .predicate((a, e, playerData) -> {
+                                .predicate((a, e, holder, playerData) -> {
                                     if (e.getInventory().getResult().getType() == Material.WOODEN_PICKAXE) {
                                         return Status.COMPLETE;
                                     } else {
@@ -158,7 +158,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10))))
                 .addAction(QuestAction.builder(BlockBreakEvent.class)
                         .name("Mine 3 Stone")
-                        .predicate((a, e, actionData) -> {
+                        .predicate((a, e, holder, actionData) -> {
                             if (e.getBlock().getType() != Material.STONE) {
                                 return Status.FALSE;
                             }
@@ -171,10 +171,10 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                             
                             return Status.COMPLETE;
                         })
-                        .onUpdate((a, e, actionData) -> getColors().coloredLegacy(e.getPlayer(), "&eStone Mined: &a" + actionData.getAsInt("count") + " &e/ &d3")))
+                        .onUpdate((a, e, holder, actionData) -> holder.sendMessage("&eStone Mined: &a" + actionData.getAsInt("count") + " &e/ &d3")))
                 .addAction(QuestAction.builder(CraftItemEvent.class)
                         .name("Craft Stone Pickaxe")
-                        .predicate((a, e, actionData) -> {
+                        .predicate((a, e, holder, actionData) -> {
                             if (e.getInventory().getResult().getType() == Material.STONE_PICKAXE) {
                                 return Status.COMPLETE;
                             } else {
@@ -222,11 +222,11 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             QuestActionData actionData = holder.getData(action);
             
             //Test the action for completion or update the quest
-            Status check = action.check(questActionObject, actionData);
+            Status check = action.check(questActionObject, holder, actionData);
             if (check == Status.COMPLETE) {
                 //If complete, mark it as complete
                 Bukkit.getPluginManager().callEvent(new ActionCompleteEvent(action, actionData));
-                action.handleOnComplete(questActionObject, actionData);
+                action.handleOnComplete(questActionObject, holder, actionData);
                 holder.completeAction(action);
                 //Mainly a testing message for now
                 holder.sendMessage("&c&l[DEBUG] &aCompleted Quest Action: &b" + action.getName());
@@ -293,5 +293,10 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         }
         
         QuestUtils.getPlayerFromEvent(e).ifPresent(player -> handleQuestActionTrigger(e, getPlayer(player.getUniqueId())));
+//        
+//        List<QuestHolder<?>> holders = QuestUtils.getHoldersFromTrigger(e);
+//        for (QuestHolder<?> holder : holders) {
+//            handleQuestActionTrigger(e, holder);
+//        }
     }
 }

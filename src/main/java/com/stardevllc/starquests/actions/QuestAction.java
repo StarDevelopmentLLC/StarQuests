@@ -41,15 +41,15 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
         this.onComplete = onComplete;
     }
     
-    public Status check(Object trigger, QuestActionData data) {
+    public Status check(Object trigger, QuestHolder<?> holder, QuestActionData data) {
         try {
             if (trigger.getClass().equals(type)) {
                 T t = (T) trigger;
-                Status result = this.predicate.test(this, t, data);
+                Status result = this.predicate.test(this, t, holder, data);
                 if (result == Status.COMPLETE || result == Status.IN_PROGRESS) {
                     Bukkit.getPluginManager().callEvent(new ActionUpdateEvent(this, data));
                     if (this.onUpdate != null) {
-                        this.onUpdate.apply(this, t, data);
+                        this.onUpdate.apply(this, t, holder, data);
                     }
                 }
                 return result;
@@ -63,12 +63,12 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
     }
     
     
-    public void handleOnComplete(Object trigger, QuestActionData data) {
+    public void handleOnComplete(Object trigger, QuestHolder<?> holder, QuestActionData data) {
         if (this.onComplete != null) {
             try {
                 if (trigger.getClass().equals(type)) {
                     T t = (T) trigger;
-                    this.onComplete.apply(this, t, data);
+                    this.onComplete.apply(this, t, holder, data);
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();

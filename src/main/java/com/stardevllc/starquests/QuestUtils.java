@@ -1,6 +1,7 @@
 package com.stardevllc.starquests;
 
 import com.stardevllc.starlib.helper.ReflectionHelper;
+import com.stardevllc.starquests.holder.QuestHolder;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
@@ -15,8 +16,26 @@ public final class QuestUtils {
     
     private static final Map<Class<? extends Event>, Function<Event, Player>> eventPlayerMappers = new HashMap<>();
     
+    private static final List<Function<Object, QuestHolder<?>>> holderMappers = new ArrayList<>();
+    
+    public static <T> void addHolderMapper(Function<T, QuestHolder<?>> mapper) {
+        holderMappers.add((Function<Object, QuestHolder<?>>) mapper);
+    }
+    
     public static <T extends Event> void addEventPlayerMapper(Class<T> eventType, Function<T, Player> mapper) {
         eventPlayerMappers.put(eventType, (Function<Event, Player>) mapper);
+    }
+    
+    public static List<QuestHolder<?>> getHoldersFromTrigger(Object trigger) {
+        List<QuestHolder<?>> holders = new ArrayList<>();
+        for (Function<Object, QuestHolder<?>> holderMapper : holderMappers) {
+            QuestHolder<?> holder = holderMapper.apply(trigger);
+            if (holder != null) {
+                holders.add(holder);
+            }
+        }
+        
+        return holders;
     }
     
     public static Optional<Player> getPlayerFromEvent(Event event) {
