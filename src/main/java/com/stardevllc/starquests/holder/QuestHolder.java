@@ -79,11 +79,11 @@ public class QuestHolder<T> {
         return completedQuests;
     }
     
-    public boolean isQuestComplete(Quest quest) {
+    public boolean isQuestComplete(Quest<?> quest) {
         return this.completedQuests.contains(quest.getId());
     }
     
-    public void completeQuest(Quest quest) {
+    public void completeQuest(Quest<?> quest) {
         this.completedQuests.add(quest.getId());
     }
     

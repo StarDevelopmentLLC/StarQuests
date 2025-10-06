@@ -16,7 +16,7 @@ import org.bukkit.ChatColor;
 
 import java.util.*;
 
-public class Quest implements Comparable<Quest> {
+public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
     private static ActionRegistry primaryActionRegistry;
     public static void setPrimaryActionRegistry(ActionRegistry registry) {
         if (primaryActionRegistry == null) {
@@ -30,23 +30,25 @@ public class Quest implements Comparable<Quest> {
     @Inject
     protected QuestRegistry questRegistry;
     
+    protected Class<H> holderType;
     protected String id;
     protected String name;
     protected List<String> description = new LinkedList<>();
     protected Set<String> requiredQuests = new HashSet<>();
     protected ActionRegistry actions;
-    protected QuestConsumer onComplete;
+    protected QuestConsumer<H> onComplete;
     
     @Inject
     protected QuestLine questLine;
     
     protected DependencyInjector injector;
     
-    public Quest(String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer onComplete) {
-        this(id, name, description, requiredQuests, onComplete, null);
+    public Quest(Class<H> holderType, String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer<H> onComplete) {
+        this(holderType, id, name, description, requiredQuests, onComplete, null);
     }
     
-    public Quest(String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer onComplete, Map<String, QuestAction<?, ?>> actions) {
+    public Quest(Class<H> holderType, String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer<H> onComplete, Map<String, QuestAction<?, H>> actions) {
+        this.holderType = holderType;
         this.id = id;
         this.name = name;
         this.description.addAll(description);
@@ -62,6 +64,10 @@ public class Quest implements Comparable<Quest> {
                 primaryActionRegistry.register(a);
             });
         }
+    }
+    
+    public Class<H> getHolderType() {
+        return holderType;
     }
     
     public String getId() {
@@ -84,11 +90,21 @@ public class Quest implements Comparable<Quest> {
         return actions;
     }
     
-    public QuestConsumer getOnComplete() {
+    public QuestConsumer<H> getOnComplete() {
         return onComplete;
     }
     
+    public void handleOnComplete(H holder) {
+        if (this.onComplete != null) {
+            this.onComplete.apply(this, holder);
+        }
+    }
+    
     public boolean isAvailable(QuestHolder<?> holder) {
+        if (!holderType.isAssignableFrom(holder.getClass())) {
+            return false;
+        }
+        
         if (holder.isQuestComplete(this)) {
             return false;
         }
@@ -98,7 +114,7 @@ public class Quest implements Comparable<Quest> {
         }
         
         for (String rq : getRequiredQuests()) {
-            Quest requiredQuest = questRegistry.get(rq);
+            Quest<?> requiredQuest = questRegistry.get(rq);
             if (!holder.isQuestComplete(requiredQuest)) {
                 return false;
             }
@@ -107,8 +123,8 @@ public class Quest implements Comparable<Quest> {
         return true;
     }
     
-    public static Builder builder() {
-        return new Builder();
+    public static <H extends QuestHolder<?>> Builder<H> builder(Class<H> holderType) {
+        return new Builder<>(holderType);
     }
     
     @Override
@@ -116,17 +132,21 @@ public class Quest implements Comparable<Quest> {
         return this.id.compareTo(o.id);
     }
     
-    public static class Builder implements IBuilder<Quest, Builder> {
+    public static class Builder<H extends QuestHolder<?>> implements IBuilder<Quest<H>, Builder<H>> {
+        protected final Class<H> holderType;
         protected String id;
         protected String name;
         protected List<String> description = new LinkedList<>();
         protected List<String> requiredQuests = new ArrayList<>();
-        protected Map<String, QuestAction<?, ?>> actions = new HashMap<>();
-        protected QuestConsumer onComplete;
+        protected Map<String, QuestAction<?, H>> actions = new HashMap<>();
+        protected QuestConsumer<H> onComplete;
         
-        public Builder() {}
+        public Builder(Class<H> holderType) {
+            this.holderType = holderType;
+        }
         
-        public Builder(Builder builder) {
+        public Builder(Builder<H> builder) {
+            this(builder.holderType);
             this.id = builder.id;
             this.name = builder.id;
             this.description.addAll(builder.description);
@@ -135,32 +155,33 @@ public class Quest implements Comparable<Quest> {
             this.onComplete = builder.onComplete;
         }
         
-        public Builder id(String id) {
+        public Builder<H> id(String id) {
             this.id = id;
             return self();
         }
         
-        public Builder name(String name) {
+        public Builder<H> name(String name) {
             this.name = name;
             return self();
         }
         
-        public Builder description(String... description) {
+        public Builder<H> description(String... description) {
             this.description.clear();
             this.description.addAll(List.of(description));
             return self();
         }
         
-        public Builder requiredQuests(String... requiredQuests) {
+        public Builder<H> requiredQuests(String... requiredQuests) {
             this.requiredQuests.clear();
             this.requiredQuests.addAll(List.of(requiredQuests));
             return self();
         }
         
-        public Builder addAction(QuestAction<?, ?> firstAction, QuestAction<?, ?>... actions) {
+        @SafeVarargs
+        public final Builder<H> addAction(QuestAction<?, H> firstAction, QuestAction<?, H>... actions) {
             this.actions.put(firstAction.getId(), firstAction);
             if (actions != null) {
-                for (QuestAction<?, ?> action : actions) {
+                for (QuestAction<?, H> action : actions) {
                     this.actions.put(action.getId(), action);
                 }
             }
@@ -168,12 +189,13 @@ public class Quest implements Comparable<Quest> {
             return self();
         }
         
-        public Builder addAction(QuestAction.Builder<?, ?> actionBuilder, QuestAction.Builder<?, ?>... actionBuilders) {
-            QuestAction<?, ?> firstAction = actionBuilder.build();
+        @SafeVarargs
+        public final Builder<H> addAction(QuestAction.Builder<?, H> actionBuilder, QuestAction.Builder<?, H>... actionBuilders) {
+            QuestAction<?, H> firstAction = actionBuilder.build();
             this.actions.put(firstAction.getId(), firstAction);
             if (actionBuilders != null) {
-                for (QuestAction.Builder<?, ?> builder : actionBuilders) {
-                    QuestAction<?, ?> action = builder.build();
+                for (QuestAction.Builder<?, H> builder : actionBuilders) {
+                    QuestAction<?, H> action = builder.build();
                     this.actions.put(action.getId(), action);
                 }
             }
@@ -181,13 +203,13 @@ public class Quest implements Comparable<Quest> {
             return self();
         }
         
-        public Builder onComplete(QuestConsumer onComplete) {
+        public Builder<H> onComplete(QuestConsumer<H> onComplete) {
             this.onComplete = onComplete;
             return self();
         } 
         
         @Override
-        public Quest build() {
+        public Quest<H> build() {
             if ((id == null || id.isBlank()) && name != null && !name.isBlank()) {
                 id = ChatColor.stripColor(StarColors.color(name.toLowerCase().replace(" ", "_")));
             }
@@ -196,12 +218,12 @@ public class Quest implements Comparable<Quest> {
                 name = StringHelper.titlize(this.id);
             }
             
-            return new Quest(id, name, description, requiredQuests, onComplete, actions);
+            return new Quest<>(holderType, id, name, description, requiredQuests, onComplete, actions);
         }
         
         @Override
-        public Builder clone() {
-            return new Builder(this);
+        public Builder<H> clone() {
+            return new Builder<>(this);
         }
     }
 }

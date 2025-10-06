@@ -63,7 +63,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 .name("Wooden Resources")
                 .onComplete((questLine, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.IRON_INGOT))));
         
-        woodenLineBuilder.addQuest(Quest.builder()
+        woodenLineBuilder.addQuest(Quest.builder(QuestPlayer.class)
                 .name("Obtain Workbench")
                 .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 2))))
                 .addAction(
@@ -113,7 +113,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                 .requiredActions("craft_4_planks")
                 ));
         
-        woodenLineBuilder.addQuest(Quest.builder()
+        woodenLineBuilder.addQuest(Quest.builder(QuestPlayer.class)
                 .name("Obtain Wooden Pickaxe")
                 .requiredQuests("obtain_workbench")
                 .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10))))
@@ -153,7 +153,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 .name("Stone Resources")
                 .requiredLines("wooden_resources")
                 .onComplete((questLine, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.DIAMOND))));
-        stoneLineBuilder.addQuest(Quest.builder()
+        stoneLineBuilder.addQuest(Quest.builder(QuestPlayer.class)
                 .name("Stone Pickaxe")
                 .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10))))
                 .addAction(QuestAction.builder(BlockBreakEvent.class, QuestPlayer.class)
@@ -213,6 +213,12 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
     
     public <H extends QuestHolder<?>> void handleQuestAction(QuestAction<?, ?> action, Object questActionObject, H holder) {
         try {
+            if (holder == null) {
+                return;
+            }
+            
+            Class<H> holderClass = (Class<H>) holder.getClass();
+            
             //Ignore the action if it is not available, which does prereq and quest checks
             if (!action.isAvailable(holder)) {
                 return;
@@ -233,7 +239,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             }
             
             questsLoop:
-            for (Quest quest : this.questRegistry) {
+            for (Quest<H> quest : this.questRegistry.getObjects(holderClass)) {
                 boolean questComplete = holder.isQuestComplete(quest);
                 if (questComplete) {
                     continue;
@@ -246,9 +252,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 }
                 
                 holder.completeQuest(quest);
-                if (quest.getOnComplete() != null) {
-                    quest.getOnComplete().apply(quest, holder);
-                }
+                quest.handleOnComplete(holder);
                 holder.sendMessage("&c&l[DEBUG] &aCompleted Quest: &b" + quest.getName());
             }
             
@@ -259,7 +263,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                     continue;
                 }
                 
-                for (Quest quest : questLine.getQuests().values()) {
+                for (Quest<H> quest : questLine.getQuests().getObjects(holderClass)) {
                     if (!holder.isQuestComplete(quest)) {
                         continue questLineLoop;
                     }

@@ -43,7 +43,7 @@ public class QuestLine {
         this(id, name, description, requiredLines, onComplete, null);
     }
     
-    public QuestLine(String id, String name, List<String> description, Set<String> requiredLines, QuestLineConsumer onComplete, Map<String, Quest> quests) {
+    public QuestLine(String id, String name, List<String> description, Set<String> requiredLines, QuestLineConsumer onComplete, Map<String, Quest<?>> quests) {
         this.id = id;
         this.name = name;
         this.description.addAll(description);
@@ -114,7 +114,7 @@ public class QuestLine {
         private String name;
         private List<String> description = new LinkedList<>();
         private Set<String> requiredLines = new HashSet<>();
-        private Map<String, Quest> quests = new HashMap<>();
+        private Map<String, Quest<?>> quests = new HashMap<>();
         private QuestLineConsumer onComplete;
         
         public Builder() {
@@ -151,10 +151,10 @@ public class QuestLine {
             return self();
         }
         
-        public Builder addQuest(Quest firstQuest, Quest... quests) {
+        public Builder addQuest(Quest<?> firstQuest, Quest<?>... quests) {
             this.quests.put(firstQuest.getId(), firstQuest);
             if (quests != null) {
-                for (Quest quest : quests) {
+                for (Quest<?> quest : quests) {
                     this.quests.put(quest.getId(), quest);
                 }
             }
@@ -162,12 +162,12 @@ public class QuestLine {
             return self();
         }
         
-        public Builder addQuest(Quest.Builder questBuilder, Quest.Builder... questBuilders) {
-            Quest firstQuest = questBuilder.build();
+        public Builder addQuest(Quest.Builder<?> questBuilder, Quest.Builder<?>... questBuilders) {
+            Quest<?> firstQuest = questBuilder.build();
             this.quests.put(firstQuest.getId(), firstQuest);
             if (questBuilders != null) {
-                for (Quest.Builder builder : questBuilders) {
-                    Quest quest = builder.build();
+                for (Quest.Builder<?> builder : questBuilders) {
+                    Quest<?> quest = builder.build();
                     this.quests.put(quest.getId(), quest);
                 }
             }

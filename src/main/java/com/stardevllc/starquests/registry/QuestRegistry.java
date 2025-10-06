@@ -3,9 +3,13 @@ package com.stardevllc.starquests.registry;
 import com.stardevllc.starlib.dependency.DependencyInjector;
 import com.stardevllc.starlib.registry.RegistryObject;
 import com.stardevllc.starlib.registry.StringRegistry;
+import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.quests.Quest;
 
-public class QuestRegistry extends StringRegistry<Quest> {
+import java.util.ArrayList;
+import java.util.List;
+
+public class QuestRegistry extends StringRegistry<Quest<?>> {
     
     private DependencyInjector injector;
     
@@ -14,12 +18,25 @@ public class QuestRegistry extends StringRegistry<Quest> {
         this.injector = injector;
     }
     
+    public <H extends QuestHolder<?>> List<Quest<H>> getObjects(Class<H> holderType) {
+        List<Quest<H>> quests = new ArrayList<>();
+        for (Quest<?> quest : this) {
+            if (quest.getHolderType().isAssignableFrom(holderType)) {
+                quests.add((Quest<H>) quest);
+            }
+        }
+        
+        return quests;
+    }
+    
     @Override
-    public RegistryObject<String, Quest> register(String key, Quest object) {
+    public RegistryObject<String, Quest<?>> register(String key, Quest<?> object) {
         return super.register(key, injector.inject(object));
     }
     
-    public Quest register(Quest.Builder builder) {
-        return this.register(builder.build()).getObject();
+    public <H extends QuestHolder<?>> Quest<H> register(Quest.Builder<H> builder) {
+        Quest<H> quest = builder.build();
+        register(quest);
+        return quest;
     }
 }
