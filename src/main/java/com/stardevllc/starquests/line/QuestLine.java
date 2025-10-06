@@ -5,7 +5,7 @@ import com.stardevllc.starlib.builder.IBuilder;
 import com.stardevllc.starlib.dependency.DependencyInjector;
 import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
-import com.stardevllc.starquests.*;
+import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.line.function.QuestLineConsumer;
 import com.stardevllc.starquests.quests.Quest;
@@ -15,7 +15,7 @@ import org.bukkit.ChatColor;
 
 import java.util.*;
 
-public class QuestLine {
+public class QuestLine<H extends QuestHolder<?>> {
     private static QuestRegistry primaryQuestRegistry;
     
     public static void setPrimaryQuestRegistry(QuestRegistry registry) {
@@ -30,20 +30,22 @@ public class QuestLine {
     @Inject
     protected QuestLineRegistry questLineRegistry;
     
+    protected final Class<H> holderType;
     protected String id;
     protected String name;
     protected List<String> description = new LinkedList<>();
     protected Set<String> requiredLines = new HashSet<>();
     protected QuestRegistry quests;
-    protected QuestLineConsumer onComplete;
+    protected QuestLineConsumer<H> onComplete;
     
     protected DependencyInjector injector;
     
-    public QuestLine(String id, String name, List<String> description, Set<String> requiredLines, QuestLineConsumer onComplete) {
-        this(id, name, description, requiredLines, onComplete, null);
+    public QuestLine(Class<H> holderType, String id, String name, List<String> description, Set<String> requiredLines, QuestLineConsumer<H> onComplete) {
+        this(holderType, id, name, description, requiredLines, onComplete, null);
     }
     
-    public QuestLine(String id, String name, List<String> description, Set<String> requiredLines, QuestLineConsumer onComplete, Map<String, Quest<?>> quests) {
+    public QuestLine(Class<H> holderType, String id, String name, List<String> description, Set<String> requiredLines, QuestLineConsumer<H> onComplete, Map<String, Quest<H>> quests) {
+        this.holderType = holderType;
         this.id = id;
         this.name = name;
         this.description.addAll(description);
@@ -60,6 +62,10 @@ public class QuestLine {
                 primaryQuestRegistry.register(quest);
             });
         }
+    }
+    
+    public Class<H> getHolderType() {
+        return holderType;
     }
     
     public StarQuests getStarQuests() {
@@ -86,8 +92,14 @@ public class QuestLine {
         return quests;
     }
     
-    public QuestLineConsumer getOnComplete() {
+    public QuestLineConsumer<H> getOnComplete() {
         return onComplete;
+    }
+    
+    public void handleOnComplete(H holder) {
+        if (this.onComplete != null) {
+            this.onComplete.apply(this, holder);
+        }
     }
     
     public boolean isAvailable(QuestHolder<?> holder) {
@@ -96,7 +108,7 @@ public class QuestLine {
         }
         
         for (String rq : getRequiredLines()) {
-            QuestLine requiredQuestLine = questLineRegistry.get(rq);
+            QuestLine<?> requiredQuestLine = questLineRegistry.get(rq);
             if (!holder.isQuestLineComplete(requiredQuestLine)) {
                 return false;
             }
@@ -105,22 +117,25 @@ public class QuestLine {
         return true;
     }
     
-    public static Builder builder() {
-        return new Builder();
+    public static <H extends QuestHolder<?>> Builder<H> builder(Class<H> holderType) {
+        return new Builder<>(holderType);
     }
     
-    public static class Builder implements IBuilder<QuestLine, Builder> {
+    public static class Builder<H extends QuestHolder<?>> implements IBuilder<QuestLine<H>, Builder<H>> {
+        private final Class<H> holderType;
         private String id;
         private String name;
         private List<String> description = new LinkedList<>();
         private Set<String> requiredLines = new HashSet<>();
-        private Map<String, Quest<?>> quests = new HashMap<>();
-        private QuestLineConsumer onComplete;
+        private Map<String, Quest<H>> quests = new HashMap<>();
+        private QuestLineConsumer<H> onComplete;
         
-        public Builder() {
+        public Builder(Class<H> holderType) {
+            this.holderType = holderType;
         }
         
-        public Builder(Builder builder) {
+        public Builder(Builder<H> builder) {
+            this(builder.holderType);
             this.id = builder.id;
             this.name = builder.name;
             this.description.addAll(builder.description);
@@ -129,32 +144,33 @@ public class QuestLine {
             this.onComplete = builder.onComplete;
         }
         
-        public Builder id(String id) {
+        public Builder<H> id(String id) {
             this.id = id;
             return self();
         }
         
-        public Builder name(String name) {
+        public Builder<H> name(String name) {
             this.name = name;
             return self();
         }
         
-        public Builder description(String... description) {
+        public Builder<H> description(String... description) {
             this.description.clear();
             this.description.addAll(List.of(description));
             return self();
         }
         
-        public Builder requiredLines(String... requiredLines) {
+        public Builder<H> requiredLines(String... requiredLines) {
             this.requiredLines.clear();
             this.requiredLines.addAll(List.of(requiredLines));
             return self();
         }
         
-        public Builder addQuest(Quest<?> firstQuest, Quest<?>... quests) {
+        @SafeVarargs
+        public final Builder<H> addQuest(Quest<H> firstQuest, Quest<H>... quests) {
             this.quests.put(firstQuest.getId(), firstQuest);
             if (quests != null) {
-                for (Quest<?> quest : quests) {
+                for (Quest<H> quest : quests) {
                     this.quests.put(quest.getId(), quest);
                 }
             }
@@ -162,12 +178,13 @@ public class QuestLine {
             return self();
         }
         
-        public Builder addQuest(Quest.Builder<?> questBuilder, Quest.Builder<?>... questBuilders) {
-            Quest<?> firstQuest = questBuilder.build();
+        @SafeVarargs
+        public final Builder<H> addQuest(Quest.Builder<H> questBuilder, Quest.Builder<H>... questBuilders) {
+            Quest<H> firstQuest = questBuilder.build();
             this.quests.put(firstQuest.getId(), firstQuest);
             if (questBuilders != null) {
-                for (Quest.Builder<?> builder : questBuilders) {
-                    Quest<?> quest = builder.build();
+                for (Quest.Builder<H> builder : questBuilders) {
+                    Quest<H> quest = builder.build();
                     this.quests.put(quest.getId(), quest);
                 }
             }
@@ -175,13 +192,13 @@ public class QuestLine {
             return self();
         }
         
-        public Builder onComplete(QuestLineConsumer onComplete) {
+        public Builder<H> onComplete(QuestLineConsumer<H> onComplete) {
             this.onComplete = onComplete;
             return self();
         }
         
         @Override
-        public QuestLine build() {
+        public QuestLine<H> build() {
             if ((id == null || id.isBlank()) && name != null && !name.isBlank()) {
                 id = ChatColor.stripColor(StarColors.color(name.toLowerCase().replace(" ", "_")));
             }
@@ -190,12 +207,12 @@ public class QuestLine {
                 name = StringHelper.titlize(this.id);
             }
             
-            return new QuestLine(this.id, this.name, this.description, this.requiredLines, this.onComplete, this.quests);
+            return new QuestLine<>(this.holderType, this.id, this.name, this.description, this.requiredLines, this.onComplete, this.quests);
         }
         
         @Override
-        public Builder clone() {
-            return new Builder(this);
+        public Builder<H> clone() {
+            return new Builder<>(this);
         }
     }
 }

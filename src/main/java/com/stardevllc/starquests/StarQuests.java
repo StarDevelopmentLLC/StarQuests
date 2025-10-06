@@ -59,7 +59,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             }
         }, 1L, 1L);
         
-        QuestLine.Builder woodenLineBuilder = QuestLine.builder()
+        QuestLine.Builder<QuestPlayer> woodenLineBuilder = QuestLine.builder(QuestPlayer.class)
                 .name("Wooden Resources")
                 .onComplete((questLine, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.IRON_INGOT))));
         
@@ -149,7 +149,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         
         questLineRegistry.register(woodenLineBuilder);
         
-        QuestLine.Builder stoneLineBuilder = QuestLine.builder()
+        QuestLine.Builder<QuestPlayer> stoneLineBuilder = QuestLine.builder(QuestPlayer.class)
                 .name("Stone Resources")
                 .requiredLines("wooden_resources")
                 .onComplete((questLine, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.DIAMOND))));
@@ -257,7 +257,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             }
             
             questLineLoop:
-            for (QuestLine questLine : this.questLineRegistry) {
+            for (QuestLine<H> questLine : this.questLineRegistry.getObjects(holderClass)) {
                 boolean questLineComplete = holder.isQuestLineComplete(questLine);
                 if (questLineComplete) {
                     continue;
@@ -270,10 +270,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 }
                 
                 holder.completeQuestLine(questLine);
-                if (questLine.getOnComplete() != null) {
-                    questLine.getOnComplete().apply(questLine, holder);
-                }
-                
+                questLine.handleOnComplete(holder);
                 holder.sendMessage("&c&l[DEBUG] &aCompleted Quest Line: &b" + questLine.getName());
             }
         } catch (Throwable ex) {

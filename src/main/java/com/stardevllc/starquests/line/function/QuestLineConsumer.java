@@ -4,6 +4,6 @@ import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.line.QuestLine;
 
 @FunctionalInterface
-public interface QuestLineConsumer {
-    void apply(QuestLine questLine, QuestHolder<?> holder);    
+public interface QuestLineConsumer<H extends QuestHolder<?>> {
+    void apply(QuestLine<H> questLine, H holder);    
 }
