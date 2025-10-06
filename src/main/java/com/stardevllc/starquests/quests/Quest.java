@@ -5,7 +5,7 @@ import com.stardevllc.starlib.builder.IBuilder;
 import com.stardevllc.starlib.dependency.DependencyInjector;
 import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
-import com.stardevllc.starquests.*;
+import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.line.QuestLine;
@@ -39,7 +39,7 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
     protected QuestConsumer<H> onComplete;
     
     @Inject
-    protected QuestLine questLine;
+    protected QuestLine<H> questLine;
     
     protected DependencyInjector injector;
     
