@@ -59,7 +59,7 @@ public class QuestHolder<T> {
         return actionData;
     }
     
-    public QuestActionData getData(QuestAction<?> action) {
+    public QuestActionData getData(QuestAction<?, ?> action) {
         return this.actionData.computeIfAbsent(action.getId(), QuestActionData::new);
     }
     
@@ -67,11 +67,11 @@ public class QuestHolder<T> {
         return completedActions;
     }
     
-    public boolean isActionComplete(QuestAction<?> questAction) {
+    public boolean isActionComplete(QuestAction<?, ?> questAction) {
         return this.completedActions.contains(questAction.getId());
     }
     
-    public void completeAction(QuestAction<?> questAction) {
+    public void completeAction(QuestAction<?, ?> questAction) {
         this.completedActions.add(questAction.getId());
     }
     

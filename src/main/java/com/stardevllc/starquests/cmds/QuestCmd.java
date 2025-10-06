@@ -28,7 +28,7 @@ public class QuestCmd implements CommandExecutor {
                 hasQuest = true;
                 plugin.getColors().coloredLegacy(player, "&e" + quest.getName());
                 
-                for (QuestAction<?> action : quest.getActions().values()) {
+                for (QuestAction<?, ?> action : quest.getActions().values()) {
                     if (action.isAvailable(questPlayer)) {
                         plugin.getColors().coloredLegacy(player, "    &e" + action.getName());
                     }

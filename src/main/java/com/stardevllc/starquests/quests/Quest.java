@@ -46,7 +46,7 @@ public class Quest implements Comparable<Quest> {
         this(id, name, description, requiredQuests, onComplete, null);
     }
     
-    public Quest(String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer onComplete, Map<String, QuestAction<?>> actions) {
+    public Quest(String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer onComplete, Map<String, QuestAction<?, ?>> actions) {
         this.id = id;
         this.name = name;
         this.description.addAll(description);
@@ -121,7 +121,7 @@ public class Quest implements Comparable<Quest> {
         protected String name;
         protected List<String> description = new LinkedList<>();
         protected List<String> requiredQuests = new ArrayList<>();
-        protected Map<String, QuestAction<?>> actions = new HashMap<>();
+        protected Map<String, QuestAction<?, ?>> actions = new HashMap<>();
         protected QuestConsumer onComplete;
         
         public Builder() {}
@@ -157,10 +157,10 @@ public class Quest implements Comparable<Quest> {
             return self();
         }
         
-        public Builder addAction(QuestAction<?> firstAction, QuestAction<?>... actions) {
+        public Builder addAction(QuestAction<?, ?> firstAction, QuestAction<?, ?>... actions) {
             this.actions.put(firstAction.getId(), firstAction);
             if (actions != null) {
-                for (QuestAction<?> action : actions) {
+                for (QuestAction<?, ?> action : actions) {
                     this.actions.put(action.getId(), action);
                 }
             }
@@ -168,12 +168,12 @@ public class Quest implements Comparable<Quest> {
             return self();
         }
         
-        public Builder addAction(QuestAction.Builder<?> actionBuilder, QuestAction.Builder<?>... actionBuilders) {
-            QuestAction<?> firstAction = actionBuilder.build();
+        public Builder addAction(QuestAction.Builder<?, ?> actionBuilder, QuestAction.Builder<?, ?>... actionBuilders) {
+            QuestAction<?, ?> firstAction = actionBuilder.build();
             this.actions.put(firstAction.getId(), firstAction);
             if (actionBuilders != null) {
-                for (QuestAction.Builder<?> builder : actionBuilders) {
-                    QuestAction<?> action = builder.build();
+                for (QuestAction.Builder<?, ?> builder : actionBuilders) {
+                    QuestAction<?, ?> action = builder.build();
                     this.actions.put(action.getId(), action);
                 }
             }

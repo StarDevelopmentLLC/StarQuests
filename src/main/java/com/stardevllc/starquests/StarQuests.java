@@ -67,7 +67,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 .name("Obtain Workbench")
                 .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 2))))
                 .addAction(
-                        QuestAction.builder(BlockBreakEvent.class)
+                        QuestAction.builder(BlockBreakEvent.class, QuestPlayer.class)
                                 .name("Break 4 Logs")
                                 .predicate((a, e, holder, actionData) -> {
                                     if (!e.getBlock().getType().name().contains("_LOG")) {
@@ -83,7 +83,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                     return Status.COMPLETE;
                                 })
                                 .onUpdate((a, e, holder, actionData) -> holder.sendMessage("&eLogs Broken: &a" + actionData.getAsInt("count") + " &e/ &d4")),
-                        QuestAction.builder(CraftItemEvent.class)
+                        QuestAction.builder(CraftItemEvent.class, QuestPlayer.class)
                                 .name("Craft 4 Planks")
                                 .predicate((a, e, holder, playerData) -> {
                                     ItemStack result = e.getInventory().getResult();
@@ -101,7 +101,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                 })
                                 .requiredActions("break_4_logs")
                                 .onUpdate((a, e, holder, playerData) -> holder.sendMessage("&ePlanks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d4")),
-                        QuestAction.builder(CraftItemEvent.class)
+                        QuestAction.builder(CraftItemEvent.class, QuestPlayer.class)
                                 .name("Craft Workbench")
                                 .predicate((a, e, holder, actionData) -> {
                                     if (e.getInventory().getResult().getType() == Material.CRAFTING_TABLE) {
@@ -118,7 +118,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 .requiredQuests("obtain_workbench")
                 .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10))))
                 .addAction(
-                        QuestAction.builder(CraftItemEvent.class)
+                        QuestAction.builder(CraftItemEvent.class, QuestPlayer.class)
                                 .name("Craft 2 Sticks")
                                 .predicate((a, e, holder, playerData) -> {
                                     ItemStack result = e.getInventory().getResult();
@@ -135,7 +135,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                                     return Status.COMPLETE;
                                 })
                                 .onUpdate((a, e, holder, playerData) -> holder.sendMessage("&eSticks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d2")),
-                        QuestAction.builder(CraftItemEvent.class)
+                        QuestAction.builder(CraftItemEvent.class, QuestPlayer.class)
                                 .name("Craft a Wooden Pickaxe")
                                 .predicate((a, e, holder, playerData) -> {
                                     if (e.getInventory().getResult().getType() == Material.WOODEN_PICKAXE) {
@@ -156,7 +156,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         stoneLineBuilder.addQuest(Quest.builder()
                 .name("Stone Pickaxe")
                 .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10))))
-                .addAction(QuestAction.builder(BlockBreakEvent.class)
+                .addAction(QuestAction.builder(BlockBreakEvent.class, QuestPlayer.class)
                         .name("Mine 3 Stone")
                         .predicate((a, e, holder, actionData) -> {
                             if (e.getBlock().getType() != Material.STONE) {
@@ -172,7 +172,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                             return Status.COMPLETE;
                         })
                         .onUpdate((a, e, holder, actionData) -> holder.sendMessage("&eStone Mined: &a" + actionData.getAsInt("count") + " &e/ &d3")))
-                .addAction(QuestAction.builder(CraftItemEvent.class)
+                .addAction(QuestAction.builder(CraftItemEvent.class, QuestPlayer.class)
                         .name("Craft Stone Pickaxe")
                         .predicate((a, e, holder, actionData) -> {
                             if (e.getInventory().getResult().getType() == Material.STONE_PICKAXE) {
@@ -211,7 +211,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         return questPlayer;
     }
     
-    public void handleQuestAction(QuestAction<?> action, Object questActionObject, QuestHolder<?> holder) {
+    public <H extends QuestHolder<?>> void handleQuestAction(QuestAction<?, ?> action, Object questActionObject, H holder) {
         try {
             //Ignore the action if it is not available, which does prereq and quest checks
             if (!action.isAvailable(holder)) {
@@ -239,7 +239,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                     continue;
                 }
                 
-                for (QuestAction<?> questAction : quest.getActions().values()) {
+                for (QuestAction<?, ?> questAction : quest.getActions().values()) {
                     if (!holder.isActionComplete(questAction)) {
                         continue questsLoop;
                     }
@@ -277,9 +277,9 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         }
     }
     
-    public void handleQuestActionTrigger(Object questActionObject, QuestHolder<?> holder) {
-        for (QuestAction<?> action : actionRegistry) {
-            if (action.getType().equals(questActionObject.getClass())) {
+    public <H extends QuestHolder<?>> void handleQuestActionTrigger(Object questActionObject, H holder) {
+        for (QuestAction<?, ?> action : actionRegistry) {
+            if (action.getType().equals(questActionObject.getClass()) && action.getHolderType().equals(holder.getClass())) {
                 handleQuestAction(action, questActionObject, holder);
             }
         }

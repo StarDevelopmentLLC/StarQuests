@@ -5,10 +5,10 @@ import com.stardevllc.starquests.actions.QuestActionData;
 import com.stardevllc.starquests.holder.QuestHolder;
 
 @FunctionalInterface
-public interface QuestActionPredicate<T> {
-    Status test(QuestAction<T> action, T triggerData, QuestHolder<?> holder, QuestActionData actionData);
+public interface QuestActionPredicate<T, H extends QuestHolder<?>> {
+    Status test(QuestAction<T, H> action, T triggerData, H holder, QuestActionData actionData);
     
     enum Status {
-        COMPLETE, IN_PROGRESS, FALSE, ERROR
+        COMPLETE, IN_PROGRESS, FALSE, WRONG_HOLDER_TYPE, ERROR
     }
 }

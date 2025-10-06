@@ -4,8 +4,9 @@ import com.stardevllc.starlib.dependency.DependencyInjector;
 import com.stardevllc.starlib.registry.RegistryObject;
 import com.stardevllc.starlib.registry.StringRegistry;
 import com.stardevllc.starquests.actions.QuestAction;
+import com.stardevllc.starquests.holder.QuestHolder;
 
-public class ActionRegistry extends StringRegistry<QuestAction<?>> {
+public class ActionRegistry extends StringRegistry<QuestAction<?, ?>> {
     
     private DependencyInjector injector;
     
@@ -15,11 +16,13 @@ public class ActionRegistry extends StringRegistry<QuestAction<?>> {
     }
     
     @Override
-    public RegistryObject<String, QuestAction<?>> register(String key, QuestAction<?> object) {
+    public RegistryObject<String, QuestAction<?, ?>> register(String key, QuestAction<?, ?> object) {
         return super.register(key, injector.inject(object));
     }
     
-    public QuestAction<?> register(QuestAction.Builder<?> builder) {
-        return register(builder.build()).getObject();
+    public <T, H extends QuestHolder<?>> QuestAction<T, H> register(QuestAction.Builder<T, H> builder) {
+        QuestAction<T, H> action = builder.build();
+        register(action);
+        return action;
     }
 }

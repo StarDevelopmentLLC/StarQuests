@@ -5,6 +5,6 @@ import com.stardevllc.starquests.actions.QuestActionData;
 import com.stardevllc.starquests.holder.QuestHolder;
 
 @FunctionalInterface
-public interface QuestActionConsumer<T> {
-    void apply(QuestAction<T> action, T triggerData, QuestHolder<?> holder, QuestActionData actionData);
+public interface QuestActionConsumer<T, H extends QuestHolder<?>> {
+    void apply(QuestAction<T, H> action, T triggerData, H holder, QuestActionData actionData);
 }

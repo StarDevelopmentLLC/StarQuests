@@ -12,25 +12,28 @@ import com.stardevllc.starquests.events.ActionUpdateEvent;
 import com.stardevllc.starquests.quests.Quest;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
 /**
  * Represents an action for a quest
  */
-public class QuestAction<T> implements Comparable<QuestAction<T>> {
+public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<QuestAction<T, H>> {
+    protected Class<H> holderType;
     protected String id;
     protected String name;
     protected List<String> description = new LinkedList<>();
     protected Class<T> type;
-    protected QuestActionPredicate<T> predicate;
+    protected QuestActionPredicate<T, H> predicate;
     protected List<String> requiredActions = new ArrayList<>();
-    protected QuestActionConsumer<T> onUpdate, onComplete;
+    protected QuestActionConsumer<T, H> onUpdate, onComplete;
     
     @Inject
     protected Quest quest;
     
-    public QuestAction(String id, String name, List<String> description, Class<T> type, QuestActionPredicate<T> predicate, List<String> requiredActions, QuestActionConsumer<T> onUpdate, QuestActionConsumer<T> onComplete) {
+    public QuestAction(Class<H> holderType, String id, String name, List<String> description, Class<T> type, QuestActionPredicate<T, H> predicate, List<String> requiredActions, QuestActionConsumer<T, H> onUpdate, QuestActionConsumer<T, H> onComplete) {
+        this.holderType = holderType;
         this.id = id;
         this.name = name;
         this.description.addAll(description);
@@ -42,14 +45,18 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
     }
     
     public Status check(Object trigger, QuestHolder<?> holder, QuestActionData data) {
+        if (!holderType.isAssignableFrom(holder.getClass())) {
+            return Status.WRONG_HOLDER_TYPE;
+        }
+        
         try {
             if (trigger.getClass().equals(type)) {
                 T t = (T) trigger;
-                Status result = this.predicate.test(this, t, holder, data);
+                Status result = this.predicate.test(this, t, (H) holder, data);
                 if (result == Status.COMPLETE || result == Status.IN_PROGRESS) {
                     Bukkit.getPluginManager().callEvent(new ActionUpdateEvent(this, data));
                     if (this.onUpdate != null) {
-                        this.onUpdate.apply(this, t, holder, data);
+                        this.onUpdate.apply(this, t, (H) holder, data);
                     }
                 }
                 return result;
@@ -65,15 +72,23 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
     
     public void handleOnComplete(Object trigger, QuestHolder<?> holder, QuestActionData data) {
         if (this.onComplete != null) {
+            if (!holderType.isAssignableFrom(holder.getClass())) {
+                return;
+            }
+            
             try {
                 if (trigger.getClass().equals(type)) {
                     T t = (T) trigger;
-                    this.onComplete.apply(this, t, holder, data);
+                    this.onComplete.apply(this, t, (H) holder, data);
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
         }
+    }
+    
+    public Class<H> getHolderType() {
+        return holderType;
     }
     
     public String getId() {
@@ -92,7 +107,7 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
         return type;
     }
     
-    public QuestActionPredicate<T> getPredicate() {
+    public QuestActionPredicate<T, H> getPredicate() {
         return predicate;
     }
     
@@ -105,6 +120,10 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
     }
     
     public boolean isAvailable(QuestHolder<?> holder) {
+        if (!holderType.isAssignableFrom(holder.getClass())) {
+            return false;
+        }
+        
         if (holder.isActionComplete(this)) {
             return false;
         }
@@ -115,7 +134,7 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
             }
             
             for (String ra : getRequiredActions()) {
-                QuestAction<?> requiredAction = getQuest().getActions().get(ra);
+                QuestAction<?, ?> requiredAction = getQuest().getActions().get(ra);
                 if (requiredAction != null) {
                     if (!holder.isActionComplete(requiredAction)) {
                         return false;
@@ -127,12 +146,12 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
         return true;
     }
     
-    public static <T> Builder<T> builder(Class<T> type) {
-        return new Builder<>(type);
+    public static <T, H extends QuestHolder<?>> Builder<T, H> builder(Class<T> type, Class<H> holderType) {
+        return new Builder<>(type, holderType);
     }
     
     @Override
-    public int compareTo(QuestAction<T> o) {
+    public int compareTo(@NotNull QuestAction<T, H> o) {
         //If this action has the other action as a requirement, then this action is less than the other action
         if (this.requiredActions.contains(o.getId())) {
             return -1;
@@ -147,21 +166,23 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
         return this.id.compareTo(o.id);
     }
     
-    public static class Builder<T> implements IBuilder<QuestAction<T>, Builder<T>> {
+    public static class Builder<T, H extends QuestHolder<?>> implements IBuilder<QuestAction<T, H>, Builder<T, H>> {
         protected final Class<T> type;
+        protected final Class<H> holderType;
         protected String id;
         protected String name;
         protected List<String> description = new LinkedList<>();
-        protected QuestActionPredicate<T> predicate;
+        protected QuestActionPredicate<T, H> predicate;
         protected List<String> requiredActions = new ArrayList<>();
-        protected QuestActionConsumer<T> onUpdate, onComplete;
+        protected QuestActionConsumer<T, H> onUpdate, onComplete;
         
-        public Builder(Class<T> type) {
+        public Builder(Class<T> type, Class<H> holderType) {
             this.type = type;
+            this.holderType = holderType;
         }
         
-        public Builder(Builder<T> builder) {
-            this.type = builder.type;
+        public Builder(Builder<T, H> builder) {
+            this(builder.type, builder.holderType);
             this.id = builder.id;
             this.name = builder.name;
             this.description.addAll(builder.description);
@@ -171,17 +192,17 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
             this.onComplete = builder.onComplete;
         }
         
-        public Builder<T> id(String id) {
+        public Builder<T, H> id(String id) {
             this.id = id;
             return self();
         }
         
-        public Builder<T> name(String name) {
+        public Builder<T, H> name(String name) {
             this.name = name;
             return self();
         }
         
-        public Builder<T> description(String... description) {
+        public Builder<T, H> description(String... description) {
             if (description != null) {
                 this.description = new LinkedList<>(Arrays.asList(description));
             }
@@ -189,12 +210,12 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
             return self();
         }
         
-        public Builder<T> predicate(QuestActionPredicate<T> predicate) {
+        public Builder<T, H> predicate(QuestActionPredicate<T, H> predicate) {
             this.predicate = predicate;
             return self();
         }
         
-        public Builder<T> requiredActions(String... prerequisiteActions) {
+        public Builder<T, H> requiredActions(String... prerequisiteActions) {
             if (prerequisiteActions != null) {
                 this.requiredActions = new LinkedList<>(Arrays.asList(prerequisiteActions));
             }
@@ -202,18 +223,18 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
             return self();
         }
         
-        public Builder<T> onUpdate(QuestActionConsumer<T> onUpdate) {
+        public Builder<T, H> onUpdate(QuestActionConsumer<T, H> onUpdate) {
             this.onUpdate = onUpdate;
             return self();
         }
         
-        public Builder<T> onComplete(QuestActionConsumer<T> onComplete) {
+        public Builder<T, H> onComplete(QuestActionConsumer<T, H> onComplete) {
             this.onComplete = onComplete;
             return self();
         }
         
         @Override
-        public QuestAction<T> build() {
+        public QuestAction<T, H> build() {
             if ((id == null || id.isBlank()) && name != null && !name.isBlank()) {
                 id = ChatColor.stripColor(StarColors.color(name.toLowerCase().replace(" ", "_")));
             }
@@ -222,11 +243,11 @@ public class QuestAction<T> implements Comparable<QuestAction<T>> {
                 name = StringHelper.titlize(this.id);
             }
             
-            return new QuestAction<>(id, name, description, type, predicate, requiredActions, onUpdate, onComplete);
+            return new QuestAction<>(holderType, id, name, description, type, predicate, requiredActions, onUpdate, onComplete);
         }
         
         @Override
-        public Builder<T> clone() {
+        public Builder<T, H> clone() {
             return new Builder<>(this);
         }
     }
