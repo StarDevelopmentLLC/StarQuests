@@ -14,6 +14,7 @@ import com.stardevllc.starquests.registry.QuestRegistry;
 import org.bukkit.ChatColor;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class QuestLine<H extends QuestHolder<?>> {
     private static QuestRegistry primaryQuestRegistry;
@@ -164,6 +165,12 @@ public class QuestLine<H extends QuestHolder<?>> {
             this.requiredLines.clear();
             this.requiredLines.addAll(List.of(requiredLines));
             return self();
+        }
+        
+        public Builder<H> createQuest(Consumer<Quest.Builder<H>> consumer) {
+            Quest.Builder<H> builder = Quest.builder(holderType);
+            consumer.accept(builder);
+            return addQuest(builder);
         }
         
         @SafeVarargs

@@ -15,6 +15,7 @@ import com.stardevllc.starquests.registry.QuestRegistry;
 import org.bukkit.ChatColor;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
     private static ActionRegistry primaryActionRegistry;
@@ -175,6 +176,12 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
             this.requiredQuests.clear();
             this.requiredQuests.addAll(List.of(requiredQuests));
             return self();
+        }
+        
+        public <T> Builder<H> createAction(Class<T> type, Consumer<QuestAction.Builder<T, H>> consumer) {
+            QuestAction.Builder<T, H> builder = QuestAction.builder(type, holderType);
+            consumer.accept(builder);
+            return addAction(builder);
         }
         
         @SafeVarargs

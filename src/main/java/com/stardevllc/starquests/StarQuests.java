@@ -63,127 +63,138 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 .name("Wooden Resources")
                 .onComplete((questLine, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.IRON_INGOT))));
         
-        woodenLineBuilder.addQuest(Quest.builder(QuestPlayer.class)
-                .name("Obtain Workbench")
-                .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 2))))
-                .addAction(
-                        QuestAction.builder(BlockBreakEvent.class, QuestPlayer.class)
-                                .name("Break 4 Logs")
-                                .predicate((a, e, holder, actionData) -> {
-                                    if (!e.getBlock().getType().name().contains("_LOG")) {
-                                        return Status.FALSE;
-                                    }
-                                    
-                                    Integer count = actionData.modifyData("count", c -> c + 1, 0);
-                                    
-                                    if (count < 4) {
-                                        return Status.IN_PROGRESS;
-                                    }
-                                    
-                                    return Status.COMPLETE;
-                                })
-                                .onUpdate((a, e, holder, actionData) -> holder.sendMessage("&eLogs Broken: &a" + actionData.getAsInt("count") + " &e/ &d4")),
-                        QuestAction.builder(CraftItemEvent.class, QuestPlayer.class)
-                                .name("Craft 4 Planks")
-                                .predicate((a, e, holder, playerData) -> {
-                                    ItemStack result = e.getInventory().getResult();
-                                    if (!result.getType().name().contains("_PLANK")) {
-                                        return Status.FALSE;
-                                    }
-                                    
-                                    Integer count = playerData.modifyData("count", c -> c + result.getAmount(), 0);
-                                    
-                                    if (count < 4) {
-                                        return Status.IN_PROGRESS;
-                                    }
-                                    
-                                    return Status.COMPLETE;
-                                })
-                                .requiredActions("break_4_logs")
-                                .onUpdate((a, e, holder, playerData) -> holder.sendMessage("&ePlanks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d4")),
-                        QuestAction.builder(CraftItemEvent.class, QuestPlayer.class)
-                                .name("Craft Workbench")
-                                .predicate((a, e, holder, actionData) -> {
-                                    if (e.getInventory().getResult().getType() == Material.CRAFTING_TABLE) {
-                                        return Status.COMPLETE;
-                                    } else {
-                                        return Status.FALSE;
-                                    }
-                                })
-                                .requiredActions("craft_4_planks")
-                ));
+        woodenLineBuilder.createQuest(builder -> {
+            builder.name("Obtain Workbench");
+            builder.onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 2))));
+            
+            builder.createAction(BlockBreakEvent.class, ab -> {
+                ab.name("Break 4 Logs");
+                ab.predicate((a, e, holder, actionData) -> {
+                    if (!e.getBlock().getType().name().contains("_LOG")) {
+                        return Status.FALSE;
+                    }
+                    
+                    Integer count = actionData.modifyData("count", c -> c + 1, 0);
+                    
+                    if (count < 4) {
+                        return Status.IN_PROGRESS;
+                    }
+                    
+                    return Status.COMPLETE;
+                });
+                ab.onUpdate((a, e, holder, actionData) -> holder.sendMessage("&eLogs Broken: &a" + actionData.getAsInt("count") + " &e/ &d4"));
+            });
+            
+            builder.createAction(CraftItemEvent.class, ab -> {
+                ab.name("Craft 4 Planks");
+                ab.predicate((a, e, holder, playerData) -> {
+                    ItemStack result = e.getInventory().getResult();
+                    if (!result.getType().name().contains("_PLANK")) {
+                        return Status.FALSE;
+                    }
+                    
+                    Integer count = playerData.modifyData("count", c -> c + result.getAmount(), 0);
+                    
+                    if (count < 4) {
+                        return Status.IN_PROGRESS;
+                    }
+                    
+                    return Status.COMPLETE;
+                });
+                ab.requiredActions("break_4_logs");
+                ab.onUpdate((a, e, holder, playerData) -> holder.sendMessage("&ePlanks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d4"));
+            });
+            
+            builder.createAction(CraftItemEvent.class, ab -> {
+                ab.name("Craft Workbench");
+                ab.predicate((a, e, holder, actionData) -> {
+                    if (e.getInventory().getResult().getType() == Material.CRAFTING_TABLE) {
+                        return Status.COMPLETE;
+                    } else {
+                        return Status.FALSE;
+                    }
+                });
+                ab.requiredActions("craft_4_planks");
+            });
+        });
         
-        woodenLineBuilder.addQuest(Quest.builder(QuestPlayer.class)
-                .name("Obtain Wooden Pickaxe")
-                .requiredQuests("obtain_workbench")
-                .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10))))
-                .addAction(
-                        QuestAction.builder(CraftItemEvent.class, QuestPlayer.class)
-                                .name("Craft 2 Sticks")
-                                .predicate((a, e, holder, playerData) -> {
-                                    ItemStack result = e.getInventory().getResult();
-                                    if (result.getType() != Material.STICK) {
-                                        return Status.FALSE;
-                                    }
-                                    
-                                    Integer count = playerData.modifyData("count", c -> c + result.getAmount(), 0);
-                                    
-                                    if (count < 2) {
-                                        return Status.IN_PROGRESS;
-                                    }
-                                    
-                                    return Status.COMPLETE;
-                                })
-                                .onUpdate((a, e, holder, playerData) -> holder.sendMessage("&eSticks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d2")),
-                        QuestAction.builder(CraftItemEvent.class, QuestPlayer.class)
-                                .name("Craft a Wooden Pickaxe")
-                                .predicate((a, e, holder, playerData) -> {
-                                    if (e.getInventory().getResult().getType() == Material.WOODEN_PICKAXE) {
-                                        return Status.COMPLETE;
-                                    } else {
-                                        return Status.FALSE;
-                                    }
-                                })
-                                .requiredActions("craft_2_sticks")
-                ));
-        
+        woodenLineBuilder.createQuest(builder -> {
+            builder.name("Obtain Wooden Pickaxe");
+            builder.requiredQuests("obtain_workbench");
+            builder.onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10))));
+            
+            builder.createAction(CraftItemEvent.class, ab -> {
+                ab.name("Craft 2 Sticks");
+                ab.predicate((a, e, holder, playerData) -> {
+                    ItemStack result = e.getInventory().getResult();
+                    if (result.getType() != Material.STICK) {
+                        return Status.FALSE;
+                    }
+                    
+                    Integer count = playerData.modifyData("count", c -> c + result.getAmount(), 0);
+                    
+                    if (count < 2) {
+                        return Status.IN_PROGRESS;
+                    }
+                    
+                    return Status.COMPLETE;
+                });
+                ab.onUpdate((a, e, holder, playerData) -> holder.sendMessage("&eSticks Crafted: &a" + playerData.getAsInt("count") + " &e/ &d2"));
+            });
+            
+            builder.createAction(CraftItemEvent.class, ab -> {
+                ab.name("Craft a Wooden Pickaxe");
+                ab.requiredActions("craft_2_sticks");
+                ab.predicate((a, e, holder, playerData) -> {
+                    if (e.getInventory().getResult().getType() == Material.WOODEN_PICKAXE) {
+                        return Status.COMPLETE;
+                    } else {
+                        return Status.FALSE;
+                    }
+                });
+            });
+        });
         questLineRegistry.register(woodenLineBuilder);
         
         QuestLine.Builder<QuestPlayer> stoneLineBuilder = QuestLine.builder(QuestPlayer.class)
                 .name("Stone Resources")
                 .requiredLines("wooden_resources")
                 .onComplete((questLine, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.DIAMOND))));
-        stoneLineBuilder.addQuest(Quest.builder(QuestPlayer.class)
-                .name("Stone Pickaxe")
-                .onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10))))
-                .addAction(QuestAction.builder(BlockBreakEvent.class, QuestPlayer.class)
-                        .name("Mine 3 Stone")
-                        .predicate((a, e, holder, actionData) -> {
-                            if (e.getBlock().getType() != Material.STONE) {
-                                return Status.FALSE;
-                            }
-                            
-                            Integer count = actionData.modifyData("count", c -> c + 1, 0);
-                            
-                            if (count < 3) {
-                                return Status.IN_PROGRESS;
-                            }
-                            
-                            return Status.COMPLETE;
-                        })
-                        .onUpdate((a, e, holder, actionData) -> holder.sendMessage("&eStone Mined: &a" + actionData.getAsInt("count") + " &e/ &d3")))
-                .addAction(QuestAction.builder(CraftItemEvent.class, QuestPlayer.class)
-                        .name("Craft Stone Pickaxe")
-                        .predicate((a, e, holder, actionData) -> {
-                            if (e.getInventory().getResult().getType() == Material.STONE_PICKAXE) {
-                                return Status.COMPLETE;
-                            } else {
-                                return Status.FALSE;
-                            }
-                        })
-                        .requiredActions("mine_3_stone")
-                )
-        );
+        
+        stoneLineBuilder.createQuest(builder -> {
+            builder.name("Stone Pickaxe");
+            builder.onComplete((quest, holder) -> holder.getPlayer().ifPresent(player -> player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10))));
+            
+            builder.createAction(BlockBreakEvent.class, ab -> {
+                ab.name("Mine 3 Stone");
+                ab.predicate((a, e, holder, actionData) -> {
+                    if (e.getBlock().getType() != Material.STONE) {
+                        return Status.FALSE;
+                    }
+                    
+                    Integer count = actionData.modifyData("count", c -> c + 1, 0);
+                    
+                    if (count < 3) {
+                        return Status.IN_PROGRESS;
+                    }
+                    
+                    return Status.COMPLETE;
+                });
+                ab.onUpdate((a, e, holder, actionData) -> holder.sendMessage("&eStone Mined: &a" + actionData.getAsInt("count") + " &e/ &d3"));
+            });
+            
+            builder.createAction(CraftItemEvent.class, ab -> {
+                ab.name("Craft Stone Pickaxe");
+                ab.predicate((a, e, holder, actionData) -> {
+                    if (e.getInventory().getResult().getType() == Material.STONE_PICKAXE) {
+                        return Status.COMPLETE;
+                    } else {
+                        return Status.FALSE;
+                    }
+                });
+                ab.requiredActions("mine_3_stone");
+            });
+        });
         
         questLineRegistry.register(stoneLineBuilder);
     }
