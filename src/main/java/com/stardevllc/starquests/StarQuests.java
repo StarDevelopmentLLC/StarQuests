@@ -21,6 +21,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
@@ -30,6 +32,9 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
     private QuestRegistry questRegistry;
     private ActionRegistry actionRegistry;
     private QuestHolderRegistry holders = new QuestHolderRegistry();
+    
+    //Testing
+    private MultiPlayerHolder multiPlayerHolder = new MultiPlayerHolder("test", new ArrayList<>());
     
     @Override
     public void onEnable() {
@@ -196,6 +201,51 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         });
         
         questLineRegistry.register(stoneLineBuilder);
+        
+        Quest.Builder<MultiPlayerHolder> globalBreakLogsBuilder = Quest.builder(MultiPlayerHolder.class)
+                .name("Global Break 10 Logs")
+                .onComplete((quest, holder) -> {
+                    for (UUID uuid : holder.getValue()) {
+                        Player player = Bukkit.getPlayer(uuid);
+                        if (player != null) {
+                            player.getInventory().addItem(new ItemStack(Material.NETHERITE_SCRAP));
+                        }
+                    }
+                });
+        globalBreakLogsBuilder.createAction(BlockBreakEvent.class, ab -> {
+            ab.name("Mine 10 Logs");
+            ab.predicate((a, e, holder, actionData) -> {
+                if (!e.getBlock().getType().name().contains("_LOG")) {
+                    return Status.FALSE;
+                }
+                
+                Integer count = actionData.modifyData("count", c -> c + 1, 0);
+                
+                if (count < 10) {
+                    return Status.IN_PROGRESS;
+                }
+                
+                return Status.COMPLETE;
+            });
+            ab.onUpdate((a, e, holder, actionData) -> holder.sendMessage("&eGlobal Logs Broken: &a" + actionData.getAsInt("count") + " &e/ &d10"));
+        });
+        
+        questRegistry.register(globalBreakLogsBuilder);
+        holders.register(this.multiPlayerHolder);
+        
+        //We just want everything to account for this holder. There may be cases where this is wanted to be filtered
+        //So that is why this method exists
+        QuestUtils.addHolderMapper(o -> multiPlayerHolder);
+    }
+    
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent e) {
+        this.multiPlayerHolder.getValue().add(e.getPlayer().getUniqueId());
+    }
+    
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent e) {
+        this.multiPlayerHolder.getValue().remove(e.getPlayer().getUniqueId());
     }
     
     public QuestRegistry getQuestRegistry() {
