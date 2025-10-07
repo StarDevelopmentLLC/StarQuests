@@ -4,15 +4,14 @@ import com.stardevllc.starcore.api.StarColors;
 import com.stardevllc.starlib.builder.IBuilder;
 import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
-import com.stardevllc.starquests.actions.function.QuestActionConsumer;
-import com.stardevllc.starquests.actions.function.QuestActionPredicate;
-import com.stardevllc.starquests.actions.function.QuestActionPredicate.Status;
+import com.stardevllc.starquests.actions.function.*;
+import com.stardevllc.starquests.actions.function.QuestActionAvailablePredicate.Availability;
+import com.stardevllc.starquests.actions.function.QuestActionTriggerPredicate.Status;
 import com.stardevllc.starquests.events.ActionUpdateEvent;
 import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.quests.Quest;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -25,7 +24,8 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
     protected String name;
     protected List<String> description = new LinkedList<>();
     protected Class<T> type;
-    protected QuestActionPredicate<T, H> predicate;
+    protected QuestActionAvailablePredicate<T, H> availablePredicate;
+    protected QuestActionTriggerPredicate<T, H> triggerPredicate;
     protected List<String> requiredActions = new ArrayList<>();
     protected QuestActionConsumer<T, H> onUpdate, onComplete;
     protected boolean markCompleteForHolder = true;
@@ -33,13 +33,14 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
     @Inject
     protected Quest<H> quest;
     
-    public QuestAction(Class<H> holderType, String id, String name, List<String> description, Class<T> type, QuestActionPredicate<T, H> predicate, List<String> requiredActions, QuestActionConsumer<T, H> onUpdate, QuestActionConsumer<T, H> onComplete, boolean markCompleteForHolder) {
+    public QuestAction(Class<H> holderType, String id, String name, List<String> description, Class<T> type, QuestActionAvailablePredicate<T, H> availablePredicate, QuestActionTriggerPredicate<T, H> triggerPredicate, List<String> requiredActions, QuestActionConsumer<T, H> onUpdate, QuestActionConsumer<T, H> onComplete, boolean markCompleteForHolder) {
         this.holderType = holderType;
         this.id = id;
         this.name = name;
         this.description.addAll(description);
         this.type = type;
-        this.predicate = predicate;
+        this.availablePredicate = availablePredicate;
+        this.triggerPredicate = triggerPredicate;
         this.requiredActions.addAll(requiredActions);
         this.onUpdate = onUpdate;
         this.onComplete = onComplete;
@@ -54,7 +55,7 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
         try {
             if (trigger.getClass().equals(type)) {
                 T t = (T) trigger;
-                Status result = this.predicate.test(this, t, (H) holder, data);
+                Status result = this.triggerPredicate.test(this, t, (H) holder, data);
                 if (result == Status.COMPLETE || result == Status.IN_PROGRESS) {
                     Bukkit.getPluginManager().callEvent(new ActionUpdateEvent(this, data));
                     if (this.onUpdate != null) {
@@ -113,8 +114,12 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
         return type;
     }
     
-    public QuestActionPredicate<T, H> getPredicate() {
-        return predicate;
+    public QuestActionTriggerPredicate<T, H> getTriggerPredicate() {
+        return triggerPredicate;
+    }
+    
+    public QuestActionAvailablePredicate<T, H> getAvailablePredicate() {
+        return availablePredicate;
     }
     
     public List<String> getRequiredActions() {
@@ -125,31 +130,39 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
         return quest;
     }
     
-    public boolean isAvailable(QuestHolder<?> holder) {
+    public Availability isAvailable(QuestHolder<?> holder, QuestActionData data) {
         if (!holderType.isAssignableFrom(holder.getClass())) {
-            return false;
+            return Availability.WRONG_HOLDER_TYPE;
+        }
+        
+        if (this.availablePredicate != null) {
+            return this.availablePredicate.test(this, (H) holder, data);
         }
         
         if (holder.isActionComplete(this)) {
-            return false;
+            return Availability.COMPLETE;
         }
         
         if (getQuest() != null) {
-            if (!getQuest().isAvailable(holder)) {
-                return false;
+            if (!getQuest().isAvailable(holder).asBoolean()) {
+                return Availability.LOCKED;
             }
             
             for (String ra : getRequiredActions()) {
                 QuestAction<?, ?> requiredAction = getQuest().getActions().get(ra);
                 if (requiredAction != null) {
                     if (!holder.isActionComplete(requiredAction)) {
-                        return false;
+                        return Availability.LOCKED;
                     }
                 }
             }
         }
         
-        return true;
+        return Availability.AVAILABLE;
+    }
+    
+    public Availability isAvailable(QuestHolder<?> holder) {
+        return isAvailable(holder, null);
     }
     
     public static <T, H extends QuestHolder<?>> Builder<T, H> builder(Class<T> type, Class<H> holderType) {
@@ -157,7 +170,7 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
     }
     
     @Override
-    public int compareTo(@NotNull QuestAction<T, H> o) {
+    public int compareTo(QuestAction<T, H> o) {
         //If this action has the other action as a requirement, then this action is less than the other action
         if (this.requiredActions.contains(o.getId())) {
             return -1;
@@ -178,7 +191,8 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
         protected String id;
         protected String name;
         protected List<String> description = new LinkedList<>();
-        protected QuestActionPredicate<T, H> predicate;
+        protected QuestActionAvailablePredicate<T, H> availablePredicate;
+        protected QuestActionTriggerPredicate<T, H> triggerPredicate;
         protected List<String> requiredActions = new ArrayList<>();
         protected QuestActionConsumer<T, H> onUpdate, onComplete;
         protected boolean markCompleteForHolder = true;
@@ -193,7 +207,8 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
             this.id = builder.id;
             this.name = builder.name;
             this.description.addAll(builder.description);
-            this.predicate = builder.predicate;
+            this.availablePredicate = builder.availablePredicate;
+            this.triggerPredicate = builder.triggerPredicate;
             this.requiredActions = new LinkedList<>(builder.requiredActions);
             this.onUpdate = builder.onUpdate;
             this.onComplete = builder.onComplete;
@@ -218,8 +233,13 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
             return self();
         }
         
-        public Builder<T, H> predicate(QuestActionPredicate<T, H> predicate) {
-            this.predicate = predicate;
+        public Builder<T, H> availablePredicate(QuestActionAvailablePredicate<T, H> predicate) {
+            this.availablePredicate = predicate;
+            return self();
+        }
+        
+        public Builder<T, H> triggerPredicate(QuestActionTriggerPredicate<T, H> predicate) {
+            this.triggerPredicate = predicate;
             return self();
         }
         
@@ -256,7 +276,7 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
                 name = StringHelper.titlize(this.id);
             }
             
-            return new QuestAction<>(holderType, id, name, description, type, predicate, requiredActions, onUpdate, onComplete, markCompleteForHolder);
+            return new QuestAction<>(holderType, id, name, description, type, availablePredicate, triggerPredicate, requiredActions, onUpdate, onComplete, markCompleteForHolder);
         }
         
         @Override

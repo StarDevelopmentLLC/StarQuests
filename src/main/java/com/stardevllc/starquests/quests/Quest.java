@@ -9,6 +9,8 @@ import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.line.QuestLine;
+import com.stardevllc.starquests.quests.function.QuestAvailablePredicate;
+import com.stardevllc.starquests.quests.function.QuestAvailablePredicate.Availability;
 import com.stardevllc.starquests.quests.function.QuestConsumer;
 import com.stardevllc.starquests.registry.ActionRegistry;
 import com.stardevllc.starquests.registry.QuestRegistry;
@@ -38,6 +40,7 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
     protected List<String> description = new LinkedList<>();
     protected Set<String> requiredQuests = new HashSet<>();
     protected ActionRegistry actions;
+    protected QuestAvailablePredicate<H> availablePredicate;
     protected QuestConsumer<H> onComplete;
     protected boolean markCompleteForHolder = true;
     
@@ -46,16 +49,17 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
     
     protected DependencyInjector injector;
     
-    public Quest(Class<H> holderType, String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer<H> onComplete, boolean markCompleteForHolder) {
-        this(holderType, id, name, description, requiredQuests, onComplete, markCompleteForHolder, null);
+    public Quest(Class<H> holderType, String id, String name, List<String> description, List<String> requiredQuests, QuestAvailablePredicate<H> availablePredicate, QuestConsumer<H> onComplete, boolean markCompleteForHolder) {
+        this(holderType, id, name, description, requiredQuests, availablePredicate, onComplete, markCompleteForHolder, null);
     }
     
-    public Quest(Class<H> holderType, String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer<H> onComplete, boolean markCompleteForHolder, Map<String, QuestAction<?, H>> actions) {
+    public Quest(Class<H> holderType, String id, String name, List<String> description, List<String> requiredQuests, QuestAvailablePredicate<H> availablePredicate, QuestConsumer<H> onComplete, boolean markCompleteForHolder, Map<String, QuestAction<?, H>> actions) {
         this.holderType = holderType;
         this.id = id;
         this.name = name;
         this.description.addAll(description);
         this.requiredQuests.addAll(requiredQuests);
+        this.availablePredicate = availablePredicate;
         this.onComplete = onComplete;
         this.injector = DependencyInjector.create();
         this.injector.setInstance(this);
@@ -94,6 +98,10 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
         return actions;
     }
     
+    public QuestAvailablePredicate<H> getAvailablePredicate() {
+        return availablePredicate;
+    }
+    
     public QuestConsumer<H> getOnComplete() {
         return onComplete;
     }
@@ -108,27 +116,31 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
         }
     }
     
-    public boolean isAvailable(QuestHolder<?> holder) {
-        if (!holderType.isAssignableFrom(holder.getClass())) {
-            return false;
+    public Availability isAvailable(QuestHolder<?> holder) {
+        if (!this.holderType.isAssignableFrom(holder.getClass())) {
+            return Availability.WRONG_HOLDER_TYPE;
+        }
+        
+        if (this.availablePredicate != null) {
+            return this.availablePredicate.test(this, (H) holder);
         }
         
         if (holder.isQuestComplete(this)) {
-            return false;
+            return Availability.COMPLETE;
         }
         
-        if (questLine != null && !questLine.isAvailable(holder)) {
-            return false;
+        if (questLine != null && !questLine.isAvailable(holder).asBoolean()) {
+            return Availability.LOCKED;
         }
         
         for (String rq : getRequiredQuests()) {
             Quest<?> requiredQuest = questRegistry.get(rq);
             if (!holder.isQuestComplete(requiredQuest)) {
-                return false;
+                return Availability.LOCKED;
             }
         }
         
-        return true;
+        return Availability.AVAILABLE;
     }
     
     public static <H extends QuestHolder<?>> Builder<H> builder(Class<H> holderType) {
@@ -147,6 +159,7 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
         protected List<String> description = new LinkedList<>();
         protected List<String> requiredQuests = new ArrayList<>();
         protected Map<String, QuestAction<?, H>> actions = new HashMap<>();
+        protected QuestAvailablePredicate<H> availablePredicate;
         protected QuestConsumer<H> onComplete;
         protected boolean markCompleteForHolder = true;
         
@@ -161,6 +174,7 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
             this.description.addAll(builder.description);
             this.requiredQuests.addAll(builder.requiredQuests);
             this.actions.putAll(builder.actions);
+            this.availablePredicate = builder.availablePredicate;
             this.onComplete = builder.onComplete;
             this.markCompleteForHolder = builder.markCompleteForHolder;
         }
@@ -219,6 +233,11 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
             return self();
         }
         
+        public Builder<H> availablePredicate(QuestAvailablePredicate<H> predicate) {
+            this.availablePredicate = predicate;
+            return self();
+        }
+        
         public Builder<H> onComplete(QuestConsumer<H> onComplete) {
             this.onComplete = onComplete;
             return self();
@@ -239,7 +258,7 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
                 name = StringHelper.titlize(this.id);
             }
             
-            return new Quest<>(holderType, id, name, description, requiredQuests, onComplete, markCompleteForHolder, actions);
+            return new Quest<>(holderType, id, name, description, requiredQuests, availablePredicate, onComplete, markCompleteForHolder, actions);
         }
         
         @Override

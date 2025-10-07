@@ -1,7 +1,7 @@
 package com.stardevllc.starquests.actions;
 
 import com.stardevllc.starlib.converter.string.StringConverters;
-import com.stardevllc.starquests.actions.function.QuestActionPredicate.Status;
+import com.stardevllc.starquests.actions.function.QuestActionTriggerPredicate.Status;
 
 import java.util.HashMap;
 import java.util.Map;

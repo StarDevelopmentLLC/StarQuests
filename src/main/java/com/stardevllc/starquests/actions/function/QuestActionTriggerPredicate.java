@@ -5,7 +5,7 @@ import com.stardevllc.starquests.actions.QuestActionData;
 import com.stardevllc.starquests.holder.QuestHolder;
 
 @FunctionalInterface
-public interface QuestActionPredicate<T, H extends QuestHolder<?>> {
+public interface QuestActionTriggerPredicate<T, H extends QuestHolder<?>> {
     Status test(QuestAction<T, H> action, T triggerData, H holder, QuestActionData actionData);
     
     enum Status {

@@ -7,6 +7,8 @@ import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
 import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.holder.QuestHolder;
+import com.stardevllc.starquests.line.function.QuestLineAvailablePredicate;
+import com.stardevllc.starquests.line.function.QuestLineAvailablePredicate.Availability;
 import com.stardevllc.starquests.line.function.QuestLineConsumer;
 import com.stardevllc.starquests.quests.Quest;
 import com.stardevllc.starquests.registry.QuestLineRegistry;
@@ -37,21 +39,23 @@ public class QuestLine<H extends QuestHolder<?>> {
     protected List<String> description = new LinkedList<>();
     protected Set<String> requiredLines = new HashSet<>();
     protected QuestRegistry quests;
+    protected QuestLineAvailablePredicate<H> availablePredicate;
     protected QuestLineConsumer<H> onComplete;
     protected boolean markCompleteForHolder = true;
     
     protected DependencyInjector injector;
     
-    public QuestLine(Class<H> holderType, String id, String name, List<String> description, Set<String> requiredLines, QuestLineConsumer<H> onComplete, boolean markCompleteForHolder) {
-        this(holderType, id, name, description, requiredLines, onComplete, markCompleteForHolder, null);
+    public QuestLine(Class<H> holderType, String id, String name, List<String> description, Set<String> requiredLines, QuestLineAvailablePredicate<H> availablePredicate, QuestLineConsumer<H> onComplete, boolean markCompleteForHolder) {
+        this(holderType, id, name, description, requiredLines, availablePredicate, onComplete, markCompleteForHolder, null);
     }
     
-    public QuestLine(Class<H> holderType, String id, String name, List<String> description, Set<String> requiredLines, QuestLineConsumer<H> onComplete, boolean markCompleteForHolder, Map<String, Quest<H>> quests) {
+    public QuestLine(Class<H> holderType, String id, String name, List<String> description, Set<String> requiredLines, QuestLineAvailablePredicate<H> availablePredicate, QuestLineConsumer<H> onComplete, boolean markCompleteForHolder, Map<String, Quest<H>> quests) {
         this.holderType = holderType;
         this.id = id;
         this.name = name;
         this.description.addAll(description);
         this.requiredLines.addAll(requiredLines);
+        this.availablePredicate = availablePredicate;
         this.onComplete = onComplete;
         this.injector = DependencyInjector.create();
         this.quests = new QuestRegistry(this.injector);
@@ -65,6 +69,10 @@ public class QuestLine<H extends QuestHolder<?>> {
                 primaryQuestRegistry.register(quest);
             });
         }
+    }
+    
+    public QuestLineAvailablePredicate<H> getAvailablePredicate() {
+        return availablePredicate;
     }
     
     public Class<H> getHolderType() {
@@ -109,19 +117,27 @@ public class QuestLine<H extends QuestHolder<?>> {
         }
     }
     
-    public boolean isAvailable(QuestHolder<?> holder) {
+    public Availability isAvailable(QuestHolder<?> holder) {
+        if (!this.holderType.isAssignableFrom(holder.getClass())) {
+            return Availability.WRONG_HOLDER_TYPE;
+        }
+        
+        if (this.availablePredicate != null) {
+            return this.availablePredicate.test(this, (H) holder);
+        }
+        
         if (holder.isQuestLineComplete(this)) {
-            return false;
+            return Availability.COMPLETE;
         }
         
         for (String rq : getRequiredLines()) {
             QuestLine<?> requiredQuestLine = questLineRegistry.get(rq);
             if (!holder.isQuestLineComplete(requiredQuestLine)) {
-                return false;
+                return Availability.LOCKED;
             }
         }
         
-        return true;
+        return Availability.AVAILABLE;
     }
     
     public static <H extends QuestHolder<?>> Builder<H> builder(Class<H> holderType) {
@@ -135,6 +151,7 @@ public class QuestLine<H extends QuestHolder<?>> {
         private List<String> description = new LinkedList<>();
         private Set<String> requiredLines = new HashSet<>();
         private Map<String, Quest<H>> quests = new HashMap<>();
+        private QuestLineAvailablePredicate<H> availablePredicate;
         private QuestLineConsumer<H> onComplete;
         private boolean markCompleteForHolder = true;
         
@@ -149,6 +166,7 @@ public class QuestLine<H extends QuestHolder<?>> {
             this.description.addAll(builder.description);
             this.requiredLines.addAll(builder.requiredLines);
             this.quests.putAll(builder.quests);
+            this.availablePredicate = builder.availablePredicate;
             this.onComplete = builder.onComplete;
             this.markCompleteForHolder = builder.markCompleteForHolder;
         }
@@ -207,6 +225,11 @@ public class QuestLine<H extends QuestHolder<?>> {
             return self();
         }
         
+        public Builder<H> availablePredicate(QuestLineAvailablePredicate<H> predicate) {
+            this.availablePredicate = predicate;
+            return self();
+        }
+        
         public Builder<H> onComplete(QuestLineConsumer<H> onComplete) {
             this.onComplete = onComplete;
             return self();
@@ -227,7 +250,7 @@ public class QuestLine<H extends QuestHolder<?>> {
                 name = StringHelper.titlize(this.id);
             }
             
-            return new QuestLine<>(this.holderType, this.id, this.name, this.description, this.requiredLines, this.onComplete, this.markCompleteForHolder, this.quests);
+            return new QuestLine<>(this.holderType, this.id, this.name, this.description, this.requiredLines, this.availablePredicate, this.onComplete, this.markCompleteForHolder, this.quests);
         }
         
         @Override

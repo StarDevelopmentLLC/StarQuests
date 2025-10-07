@@ -6,7 +6,7 @@ import com.stardevllc.starmclib.StarMCLib;
 import com.stardevllc.starmclib.plugin.ExtendedJavaPlugin;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.actions.QuestActionData;
-import com.stardevllc.starquests.actions.function.QuestActionPredicate.Status;
+import com.stardevllc.starquests.actions.function.QuestActionTriggerPredicate.Status;
 import com.stardevllc.starquests.cmds.QuestCmd;
 import com.stardevllc.starquests.events.ActionCompleteEvent;
 import com.stardevllc.starquests.events.QuestEvent;
@@ -73,7 +73,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             
             builder.createAction(BlockBreakEvent.class, ab -> {
                 ab.name("Break 4 Logs");
-                ab.predicate((a, e, holder, actionData) -> {
+                ab.triggerPredicate((a, e, holder, actionData) -> {
                     if (!e.getBlock().getType().name().contains("_LOG")) {
                         return Status.FALSE;
                     }
@@ -91,7 +91,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             
             builder.createAction(CraftItemEvent.class, ab -> {
                 ab.name("Craft 4 Planks");
-                ab.predicate((a, e, holder, playerData) -> {
+                ab.triggerPredicate((a, e, holder, playerData) -> {
                     ItemStack result = e.getInventory().getResult();
                     if (!result.getType().name().contains("_PLANK")) {
                         return Status.FALSE;
@@ -111,7 +111,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             
             builder.createAction(CraftItemEvent.class, ab -> {
                 ab.name("Craft Workbench");
-                ab.predicate((a, e, holder, actionData) -> {
+                ab.triggerPredicate((a, e, holder, actionData) -> {
                     if (e.getInventory().getResult().getType() == Material.CRAFTING_TABLE) {
                         return Status.COMPLETE;
                     } else {
@@ -129,7 +129,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             
             builder.createAction(CraftItemEvent.class, ab -> {
                 ab.name("Craft 2 Sticks");
-                ab.predicate((a, e, holder, playerData) -> {
+                ab.triggerPredicate((a, e, holder, playerData) -> {
                     ItemStack result = e.getInventory().getResult();
                     if (result.getType() != Material.STICK) {
                         return Status.FALSE;
@@ -149,7 +149,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             builder.createAction(CraftItemEvent.class, ab -> {
                 ab.name("Craft a Wooden Pickaxe");
                 ab.requiredActions("craft_2_sticks");
-                ab.predicate((a, e, holder, playerData) -> {
+                ab.triggerPredicate((a, e, holder, playerData) -> {
                     if (e.getInventory().getResult().getType() == Material.WOODEN_PICKAXE) {
                         return Status.COMPLETE;
                     } else {
@@ -171,7 +171,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             
             builder.createAction(BlockBreakEvent.class, ab -> {
                 ab.name("Mine 3 Stone");
-                ab.predicate((a, e, holder, actionData) -> {
+                ab.triggerPredicate((a, e, holder, actionData) -> {
                     if (e.getBlock().getType() != Material.STONE) {
                         return Status.FALSE;
                     }
@@ -189,7 +189,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             
             builder.createAction(CraftItemEvent.class, ab -> {
                 ab.name("Craft Stone Pickaxe");
-                ab.predicate((a, e, holder, actionData) -> {
+                ab.triggerPredicate((a, e, holder, actionData) -> {
                     if (e.getInventory().getResult().getType() == Material.STONE_PICKAXE) {
                         return Status.COMPLETE;
                     } else {
@@ -214,7 +214,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 });
         globalBreakLogsBuilder.createAction(BlockBreakEvent.class, ab -> {
             ab.name("Mine 10 Logs");
-            ab.predicate((a, e, holder, actionData) -> {
+            ab.triggerPredicate((a, e, holder, actionData) -> {
                 if (!e.getBlock().getType().name().contains("_LOG")) {
                     return Status.FALSE;
                 }
@@ -280,7 +280,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             Class<H> holderClass = (Class<H>) holder.getClass();
             
             //Ignore the action if it is not available, which does prereq and quest checks
-            if (!action.isAvailable(holder)) {
+            if (!action.isAvailable(holder).asBoolean()) {
                 return;
             }
             
