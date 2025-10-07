@@ -289,6 +289,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             
             //Test the action for completion or update the quest
             Status check = action.check(questActionObject, holder, actionData);
+            actionData.setLastStatus(check);
             if (check == Status.COMPLETE) {
                 //If complete, mark it as complete
                 Bukkit.getPluginManager().callEvent(new ActionCompleteEvent(action, actionData));

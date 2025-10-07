@@ -1,6 +1,7 @@
 package com.stardevllc.starquests.actions;
 
 import com.stardevllc.starlib.converter.string.StringConverters;
+import com.stardevllc.starquests.actions.function.QuestActionPredicate.Status;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,6 +10,8 @@ import java.util.function.Function;
 public class QuestActionData {
     protected final String actionId;
     protected final Map<String, Object> data = new HashMap<>();
+    
+    protected Status lastStatus;
     
     public QuestActionData(String actionId) {
         this.actionId = actionId;
@@ -29,6 +32,10 @@ public class QuestActionData {
             return newData;
         } catch (Throwable t) {}
         return defaultValue;
+    }
+    
+    public void setLastStatus(Status lastStatus) {
+        this.lastStatus = lastStatus;
     }
     
     public Object get(String key) {
