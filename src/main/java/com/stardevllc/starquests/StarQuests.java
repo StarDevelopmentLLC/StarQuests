@@ -18,13 +18,12 @@ import com.stardevllc.starquests.registry.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
-import org.bukkit.event.Listener;
+import org.bukkit.event.*;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.UUID;
+import java.util.*;
 
 public class StarQuests extends ExtendedJavaPlugin implements Listener {
     private QuestLineRegistry questLineRegistry;
@@ -304,11 +303,10 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             return;
         }
         
-        QuestUtils.getPlayerFromEvent(e).ifPresent(player -> handleQuestActionTrigger(e, getPlayer(player.getUniqueId())));
-//        
-//        List<QuestHolder<?>> holders = QuestUtils.getHoldersFromTrigger(e);
-//        for (QuestHolder<?> holder : holders) {
-//            handleQuestActionTrigger(e, holder);
-//        }
+        List<QuestHolder<?>> holders = new ArrayList<>(QuestUtils.getHoldersFromTrigger(e));
+        QuestUtils.getPlayerFromEvent(e).ifPresent(player -> holders.add(getPlayer(player.getUniqueId())));
+        for (QuestHolder<?> holder : holders) {
+            handleQuestActionTrigger(e, holder);
+        }
     }
 }
