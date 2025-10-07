@@ -4,11 +4,11 @@ import com.stardevllc.starcore.api.StarColors;
 import com.stardevllc.starlib.builder.IBuilder;
 import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
-import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.actions.function.QuestActionConsumer;
 import com.stardevllc.starquests.actions.function.QuestActionPredicate;
 import com.stardevllc.starquests.actions.function.QuestActionPredicate.Status;
 import com.stardevllc.starquests.events.ActionUpdateEvent;
+import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.quests.Quest;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -28,11 +28,12 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
     protected QuestActionPredicate<T, H> predicate;
     protected List<String> requiredActions = new ArrayList<>();
     protected QuestActionConsumer<T, H> onUpdate, onComplete;
+    protected boolean markCompleteForHolder = true;
     
     @Inject
-    protected Quest quest;
+    protected Quest<H> quest;
     
-    public QuestAction(Class<H> holderType, String id, String name, List<String> description, Class<T> type, QuestActionPredicate<T, H> predicate, List<String> requiredActions, QuestActionConsumer<T, H> onUpdate, QuestActionConsumer<T, H> onComplete) {
+    public QuestAction(Class<H> holderType, String id, String name, List<String> description, Class<T> type, QuestActionPredicate<T, H> predicate, List<String> requiredActions, QuestActionConsumer<T, H> onUpdate, QuestActionConsumer<T, H> onComplete, boolean markCompleteForHolder) {
         this.holderType = holderType;
         this.id = id;
         this.name = name;
@@ -42,6 +43,7 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
         this.requiredActions.addAll(requiredActions);
         this.onUpdate = onUpdate;
         this.onComplete = onComplete;
+        this.markCompleteForHolder = markCompleteForHolder;
     }
     
     public Status check(Object trigger, QuestHolder<?> holder, QuestActionData data) {
@@ -85,6 +87,10 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
                 ex.printStackTrace();
             }
         }
+        
+        if (markCompleteForHolder) {
+            holder.completeAction(this);
+        }
     }
     
     public Class<H> getHolderType() {
@@ -115,7 +121,7 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
         return requiredActions;
     }
     
-    public Quest getQuest() {
+    public Quest<H> getQuest() {
         return quest;
     }
     
@@ -175,6 +181,7 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
         protected QuestActionPredicate<T, H> predicate;
         protected List<String> requiredActions = new ArrayList<>();
         protected QuestActionConsumer<T, H> onUpdate, onComplete;
+        protected boolean markCompleteForHolder = true;
         
         public Builder(Class<T> type, Class<H> holderType) {
             this.type = type;
@@ -190,6 +197,7 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
             this.requiredActions = new LinkedList<>(builder.requiredActions);
             this.onUpdate = builder.onUpdate;
             this.onComplete = builder.onComplete;
+            this.markCompleteForHolder = builder.markCompleteForHolder;
         }
         
         public Builder<T, H> id(String id) {
@@ -233,6 +241,11 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
             return self();
         }
         
+        public Builder<T, H> markCompleteForHolder(boolean markCompleteForHolder) {
+            this.markCompleteForHolder = markCompleteForHolder;
+            return self();
+        }
+        
         @Override
         public QuestAction<T, H> build() {
             if ((id == null || id.isBlank()) && name != null && !name.isBlank()) {
@@ -243,7 +256,7 @@ public class QuestAction<T, H extends QuestHolder<?>> implements Comparable<Ques
                 name = StringHelper.titlize(this.id);
             }
             
-            return new QuestAction<>(holderType, id, name, description, type, predicate, requiredActions, onUpdate, onComplete);
+            return new QuestAction<>(holderType, id, name, description, type, predicate, requiredActions, onUpdate, onComplete, markCompleteForHolder);
         }
         
         @Override

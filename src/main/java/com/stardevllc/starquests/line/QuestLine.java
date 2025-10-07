@@ -38,14 +38,15 @@ public class QuestLine<H extends QuestHolder<?>> {
     protected Set<String> requiredLines = new HashSet<>();
     protected QuestRegistry quests;
     protected QuestLineConsumer<H> onComplete;
+    protected boolean markCompleteForHolder = true;
     
     protected DependencyInjector injector;
     
-    public QuestLine(Class<H> holderType, String id, String name, List<String> description, Set<String> requiredLines, QuestLineConsumer<H> onComplete) {
-        this(holderType, id, name, description, requiredLines, onComplete, null);
+    public QuestLine(Class<H> holderType, String id, String name, List<String> description, Set<String> requiredLines, QuestLineConsumer<H> onComplete, boolean markCompleteForHolder) {
+        this(holderType, id, name, description, requiredLines, onComplete, markCompleteForHolder, null);
     }
     
-    public QuestLine(Class<H> holderType, String id, String name, List<String> description, Set<String> requiredLines, QuestLineConsumer<H> onComplete, Map<String, Quest<H>> quests) {
+    public QuestLine(Class<H> holderType, String id, String name, List<String> description, Set<String> requiredLines, QuestLineConsumer<H> onComplete, boolean markCompleteForHolder, Map<String, Quest<H>> quests) {
         this.holderType = holderType;
         this.id = id;
         this.name = name;
@@ -56,6 +57,7 @@ public class QuestLine<H extends QuestHolder<?>> {
         this.quests = new QuestRegistry(this.injector);
         this.injector.setInstance(this);
         this.injector.setInstance(this.quests);
+        this.markCompleteForHolder = markCompleteForHolder;
         
         if (quests != null) {
             quests.forEach((qid, quest) -> {
@@ -100,6 +102,10 @@ public class QuestLine<H extends QuestHolder<?>> {
     public void handleOnComplete(H holder) {
         if (this.onComplete != null) {
             this.onComplete.apply(this, holder);
+        } 
+        
+        if (markCompleteForHolder) {
+            holder.completeQuestLine(this);
         }
     }
     
@@ -130,6 +136,7 @@ public class QuestLine<H extends QuestHolder<?>> {
         private Set<String> requiredLines = new HashSet<>();
         private Map<String, Quest<H>> quests = new HashMap<>();
         private QuestLineConsumer<H> onComplete;
+        private boolean markCompleteForHolder = true;
         
         public Builder(Class<H> holderType) {
             this.holderType = holderType;
@@ -143,6 +150,7 @@ public class QuestLine<H extends QuestHolder<?>> {
             this.requiredLines.addAll(builder.requiredLines);
             this.quests.putAll(builder.quests);
             this.onComplete = builder.onComplete;
+            this.markCompleteForHolder = builder.markCompleteForHolder;
         }
         
         public Builder<H> id(String id) {
@@ -204,6 +212,11 @@ public class QuestLine<H extends QuestHolder<?>> {
             return self();
         }
         
+        public Builder<H> markCompleteForHolder(boolean markCompleteForHolder) {
+            this.markCompleteForHolder = markCompleteForHolder;
+            return self();
+        }
+        
         @Override
         public QuestLine<H> build() {
             if ((id == null || id.isBlank()) && name != null && !name.isBlank()) {
@@ -214,7 +227,7 @@ public class QuestLine<H extends QuestHolder<?>> {
                 name = StringHelper.titlize(this.id);
             }
             
-            return new QuestLine<>(this.holderType, this.id, this.name, this.description, this.requiredLines, this.onComplete, this.quests);
+            return new QuestLine<>(this.holderType, this.id, this.name, this.description, this.requiredLines, this.onComplete, this.markCompleteForHolder, this.quests);
         }
         
         @Override

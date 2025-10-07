@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 
 public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
     private static ActionRegistry primaryActionRegistry;
+    
     public static void setPrimaryActionRegistry(ActionRegistry registry) {
         if (primaryActionRegistry == null) {
             primaryActionRegistry = registry;
@@ -38,17 +39,18 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
     protected Set<String> requiredQuests = new HashSet<>();
     protected ActionRegistry actions;
     protected QuestConsumer<H> onComplete;
+    protected boolean markCompleteForHolder = true;
     
     @Inject
     protected QuestLine<H> questLine;
     
     protected DependencyInjector injector;
     
-    public Quest(Class<H> holderType, String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer<H> onComplete) {
-        this(holderType, id, name, description, requiredQuests, onComplete, null);
+    public Quest(Class<H> holderType, String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer<H> onComplete, boolean markCompleteForHolder) {
+        this(holderType, id, name, description, requiredQuests, onComplete, markCompleteForHolder, null);
     }
     
-    public Quest(Class<H> holderType, String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer<H> onComplete, Map<String, QuestAction<?, H>> actions) {
+    public Quest(Class<H> holderType, String id, String name, List<String> description, List<String> requiredQuests, QuestConsumer<H> onComplete, boolean markCompleteForHolder, Map<String, QuestAction<?, H>> actions) {
         this.holderType = holderType;
         this.id = id;
         this.name = name;
@@ -58,6 +60,7 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
         this.injector = DependencyInjector.create();
         this.injector.setInstance(this);
         this.actions = new ActionRegistry(this.injector);
+        this.markCompleteForHolder = markCompleteForHolder;
         if (actions != null) {
             this.actions.putAll(actions);
             actions.values().forEach(a -> {
@@ -98,6 +101,10 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
     public void handleOnComplete(H holder) {
         if (this.onComplete != null) {
             this.onComplete.apply(this, holder);
+        }
+        
+        if (markCompleteForHolder) {
+            holder.completeQuest(this);
         }
     }
     
@@ -141,6 +148,7 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
         protected List<String> requiredQuests = new ArrayList<>();
         protected Map<String, QuestAction<?, H>> actions = new HashMap<>();
         protected QuestConsumer<H> onComplete;
+        protected boolean markCompleteForHolder = true;
         
         public Builder(Class<H> holderType) {
             this.holderType = holderType;
@@ -154,6 +162,7 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
             this.requiredQuests.addAll(builder.requiredQuests);
             this.actions.putAll(builder.actions);
             this.onComplete = builder.onComplete;
+            this.markCompleteForHolder = builder.markCompleteForHolder;
         }
         
         public Builder<H> id(String id) {
@@ -213,7 +222,12 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
         public Builder<H> onComplete(QuestConsumer<H> onComplete) {
             this.onComplete = onComplete;
             return self();
-        } 
+        }
+        
+        public Builder<H> markCompleteForHolder(boolean markCompleteForHolder) {
+            this.markCompleteForHolder = markCompleteForHolder;
+            return self();
+        }
         
         @Override
         public Quest<H> build() {
@@ -225,7 +239,7 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
                 name = StringHelper.titlize(this.id);
             }
             
-            return new Quest<>(holderType, id, name, description, requiredQuests, onComplete, actions);
+            return new Quest<>(holderType, id, name, description, requiredQuests, onComplete, markCompleteForHolder, actions);
         }
         
         @Override

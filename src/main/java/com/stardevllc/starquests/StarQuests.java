@@ -293,7 +293,6 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 //If complete, mark it as complete
                 Bukkit.getPluginManager().callEvent(new ActionCompleteEvent(action, actionData));
                 action.handleOnComplete(questActionObject, holder, actionData);
-                holder.completeAction(action);
                 //Mainly a testing message for now
                 holder.sendMessage("&c&l[DEBUG] &aCompleted Quest Action: &b" + action.getName());
             }
@@ -311,7 +310,6 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                     }
                 }
                 
-                holder.completeQuest(quest);
                 quest.handleOnComplete(holder);
                 holder.sendMessage("&c&l[DEBUG] &aCompleted Quest: &b" + quest.getName());
             }
@@ -330,7 +328,6 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 }
                 
                 holder.completeQuestLine(questLine);
-                questLine.handleOnComplete(holder);
                 holder.sendMessage("&c&l[DEBUG] &aCompleted Quest Line: &b" + questLine.getName());
             }
         } catch (Throwable ex) {
