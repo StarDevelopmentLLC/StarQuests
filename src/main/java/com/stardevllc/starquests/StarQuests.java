@@ -1,7 +1,6 @@
 package com.stardevllc.starquests;
 
-import com.stardevllc.starcore.api.StarEvents;
-import com.stardevllc.starlib.eventbus.SubscribeEvent;
+import com.stardevllc.starevents.StarEvents;
 import com.stardevllc.starmclib.StarMCLib;
 import com.stardevllc.starmclib.plugin.ExtendedJavaPlugin;
 import com.stardevllc.starquests.actions.QuestAction;
@@ -12,6 +11,7 @@ import com.stardevllc.starquests.events.ActionCompleteEvent;
 import com.stardevllc.starquests.events.QuestEvent;
 import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.holder.QuestPlayer;
+import com.stardevllc.starquests.hooks.StarEventsHook;
 import com.stardevllc.starquests.line.QuestLine;
 import com.stardevllc.starquests.quests.Quest;
 import com.stardevllc.starquests.registry.*;
@@ -41,7 +41,6 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         super.onEnable();
         StarMCLib.registerPluginEventBus(getEventBus());
         StarMCLib.registerPluginInjector(this, getInjector());
-        StarEvents.addChildBus(getEventBus());
         this.actionRegistry = new ActionRegistry(getInjector());
         Quest.setPrimaryActionRegistry(this.actionRegistry);
         this.questRegistry = new QuestRegistry(getInjector());
@@ -51,7 +50,6 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         getInjector().setInstance(questRegistry);
         getInjector().setInstance(questLineRegistry);
         getInjector().setInstance(holders);
-        getEventBus().subscribe(this);
         
         registerListeners(this);
         
@@ -62,6 +60,21 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 handleQuestActionTrigger(player, getPlayer(player.getUniqueId()));
             }
         }, 1L, 1L);
+        
+        StarEvents.registerListener(Event.class, e -> {
+            //Ignore quest events from StarQuests to prevent infinite recursion
+            if (e instanceof QuestEvent) {
+                return;
+            }
+            
+            List<QuestHolder<?>> holders = new ArrayList<>(QuestUtils.getHoldersFromTrigger(e));
+            QuestUtils.getPlayerFromEvent(e).ifPresent(player -> holders.add(getPlayer(player.getUniqueId())));
+            for (QuestHolder<?> holder : holders) {
+                handleQuestActionTrigger(e, holder);
+            }
+        });
+        
+        StarEvents.addEventListener(new StarEventsHook());
         
         QuestLine.Builder<QuestPlayer> woodenLineBuilder = QuestLine.builder(QuestPlayer.class)
                 .name("Wooden Resources")
@@ -341,20 +354,6 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
             if (action.getType().equals(questActionObject.getClass()) && action.getHolderType().equals(holder.getClass())) {
                 handleQuestAction(action, questActionObject, holder);
             }
-        }
-    }
-    
-    @SubscribeEvent
-    public void onEvent(Event e) {
-        //Ignore custom events for quests as these are mainly for formatting and stuff
-        if (e instanceof QuestEvent) {
-            return;
-        }
-        
-        List<QuestHolder<?>> holders = new ArrayList<>(QuestUtils.getHoldersFromTrigger(e));
-        QuestUtils.getPlayerFromEvent(e).ifPresent(player -> holders.add(getPlayer(player.getUniqueId())));
-        for (QuestHolder<?> holder : holders) {
-            handleQuestActionTrigger(e, holder);
         }
     }
 }
