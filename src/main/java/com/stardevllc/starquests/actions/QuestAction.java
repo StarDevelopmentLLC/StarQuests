@@ -2,8 +2,8 @@ package com.stardevllc.starquests.actions;
 
 import com.stardevllc.starcore.api.StarColors;
 import com.stardevllc.starlib.builder.IBuilder;
-import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
+import com.stardevllc.starlib.injector.Inject;
 import com.stardevllc.starquests.actions.function.*;
 import com.stardevllc.starquests.actions.function.QuestActionAvailablePredicate.Availability;
 import com.stardevllc.starquests.actions.function.QuestActionTriggerPredicate.Status;

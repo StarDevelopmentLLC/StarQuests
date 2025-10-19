@@ -2,9 +2,9 @@ package com.stardevllc.starquests.line;
 
 import com.stardevllc.starcore.api.StarColors;
 import com.stardevllc.starlib.builder.IBuilder;
-import com.stardevllc.starlib.dependency.DependencyInjector;
-import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
+import com.stardevllc.starlib.injector.FieldInjector;
+import com.stardevllc.starlib.injector.Inject;
 import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.line.function.QuestLineAvailablePredicate;
@@ -43,7 +43,7 @@ public class QuestLine<H extends QuestHolder<?>> {
     protected QuestLineConsumer<H> onComplete;
     protected boolean markCompleteForHolder = true;
     
-    protected DependencyInjector injector;
+    protected FieldInjector injector;
     
     public QuestLine(Class<H> holderType, String id, String name, List<String> description, Set<String> requiredLines, QuestLineAvailablePredicate<H> availablePredicate, QuestLineConsumer<H> onComplete, boolean markCompleteForHolder) {
         this(holderType, id, name, description, requiredLines, availablePredicate, onComplete, markCompleteForHolder, null);
@@ -57,7 +57,7 @@ public class QuestLine<H extends QuestHolder<?>> {
         this.requiredLines.addAll(requiredLines);
         this.availablePredicate = availablePredicate;
         this.onComplete = onComplete;
-        this.injector = DependencyInjector.create();
+        this.injector = FieldInjector.create();
         this.quests = new QuestRegistry(this.injector);
         this.injector.setInstance(this);
         this.injector.setInstance(this.quests);

@@ -2,9 +2,9 @@ package com.stardevllc.starquests.quests;
 
 import com.stardevllc.starcore.api.StarColors;
 import com.stardevllc.starlib.builder.IBuilder;
-import com.stardevllc.starlib.dependency.DependencyInjector;
-import com.stardevllc.starlib.dependency.Inject;
 import com.stardevllc.starlib.helper.StringHelper;
+import com.stardevllc.starlib.injector.FieldInjector;
+import com.stardevllc.starlib.injector.Inject;
 import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.holder.QuestHolder;
@@ -47,7 +47,7 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
     @Inject
     protected QuestLine<H> questLine;
     
-    protected DependencyInjector injector;
+    protected FieldInjector injector;
     
     public Quest(Class<H> holderType, String id, String name, List<String> description, List<String> requiredQuests, QuestAvailablePredicate<H> availablePredicate, QuestConsumer<H> onComplete, boolean markCompleteForHolder) {
         this(holderType, id, name, description, requiredQuests, availablePredicate, onComplete, markCompleteForHolder, null);
@@ -61,7 +61,7 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
         this.requiredQuests.addAll(requiredQuests);
         this.availablePredicate = availablePredicate;
         this.onComplete = onComplete;
-        this.injector = DependencyInjector.create();
+        this.injector = FieldInjector.create();
         this.injector.setInstance(this);
         this.actions = new ActionRegistry(this.injector);
         this.markCompleteForHolder = markCompleteForHolder;

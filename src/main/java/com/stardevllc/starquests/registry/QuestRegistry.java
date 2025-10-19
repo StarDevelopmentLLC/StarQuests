@@ -1,6 +1,6 @@
 package com.stardevllc.starquests.registry;
 
-import com.stardevllc.starlib.dependency.DependencyInjector;
+import com.stardevllc.starlib.injector.FieldInjector;
 import com.stardevllc.starlib.registry.RegistryObject;
 import com.stardevllc.starlib.registry.StringRegistry;
 import com.stardevllc.starquests.holder.QuestHolder;
@@ -11,9 +11,9 @@ import java.util.List;
 
 public class QuestRegistry extends StringRegistry<Quest<?>> {
     
-    private DependencyInjector injector;
+    private FieldInjector injector;
     
-    public QuestRegistry(DependencyInjector injector) {
+    public QuestRegistry(FieldInjector injector) {
         super(null, string -> string.toLowerCase().replace(" ", "_"), Quest::getId, null, null);
         this.injector = injector;
     }
