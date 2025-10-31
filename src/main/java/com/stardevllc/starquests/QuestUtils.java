@@ -1,6 +1,6 @@
 package com.stardevllc.starquests;
 
-import com.stardevllc.starlib.helper.ReflectionHelper;
+import com.stardevllc.starlib.reflection.ReflectionHelper;
 import com.stardevllc.starquests.holder.QuestHolder;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;

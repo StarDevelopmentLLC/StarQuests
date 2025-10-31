@@ -1,7 +1,6 @@
 package com.stardevllc.starquests;
 
 import com.stardevllc.starevents.StarEvents;
-import com.stardevllc.starmclib.StarMCLib;
 import com.stardevllc.starmclib.plugin.ExtendedJavaPlugin;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.actions.QuestActionData;
@@ -39,17 +38,15 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
     @Override
     public void onEnable() {
         super.onEnable();
-        StarMCLib.registerPluginEventBus(getEventBus());
-        StarMCLib.registerPluginInjector(this, getInjector());
         this.actionRegistry = new ActionRegistry(getInjector());
         Quest.setPrimaryActionRegistry(this.actionRegistry);
         this.questRegistry = new QuestRegistry(getInjector());
         QuestLine.setPrimaryQuestRegistry(this.questRegistry);
         this.questLineRegistry = new QuestLineRegistry(getInjector());
         QuestHolder.setColorFunction(text -> getColors().colorLegacy(text));
-        getInjector().setInstance(questRegistry);
-        getInjector().setInstance(questLineRegistry);
-        getInjector().setInstance(holders);
+        getInjector().set(questRegistry);
+        getInjector().set(questLineRegistry);
+        getInjector().set(holders);
         
         registerListeners(this);
         

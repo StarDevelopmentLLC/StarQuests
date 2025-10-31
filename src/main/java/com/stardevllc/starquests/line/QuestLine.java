@@ -59,8 +59,8 @@ public class QuestLine<H extends QuestHolder<?>> {
         this.onComplete = onComplete;
         this.injector = FieldInjector.create();
         this.quests = new QuestRegistry(this.injector);
-        this.injector.setInstance(this);
-        this.injector.setInstance(this.quests);
+        this.injector.set(this);
+        this.injector.set(this.quests);
         this.markCompleteForHolder = markCompleteForHolder;
         
         if (quests != null) {

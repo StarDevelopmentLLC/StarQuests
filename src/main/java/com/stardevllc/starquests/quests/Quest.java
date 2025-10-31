@@ -62,7 +62,7 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
         this.availablePredicate = availablePredicate;
         this.onComplete = onComplete;
         this.injector = FieldInjector.create();
-        this.injector.setInstance(this);
+        this.injector.set(this);
         this.actions = new ActionRegistry(this.injector);
         this.markCompleteForHolder = markCompleteForHolder;
         if (actions != null) {
