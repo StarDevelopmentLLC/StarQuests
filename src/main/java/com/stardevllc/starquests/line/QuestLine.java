@@ -1,10 +1,10 @@
 package com.stardevllc.starquests.line;
 
 import com.stardevllc.starcore.api.StarColors;
-import com.stardevllc.starlib.builder.IBuilder;
 import com.stardevllc.starlib.helper.StringHelper;
 import com.stardevllc.starlib.injector.FieldInjector;
 import com.stardevllc.starlib.injector.Inject;
+import com.stardevllc.starlib.objects.builder.IBuilder;
 import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.line.function.QuestLineAvailablePredicate;

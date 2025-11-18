@@ -1,15 +1,15 @@
 package com.stardevllc.starquests.registry;
 
 import com.stardevllc.starlib.injector.FieldInjector;
-import com.stardevllc.starlib.registry.RegistryObject;
-import com.stardevllc.starlib.registry.StringRegistry;
+import com.stardevllc.starlib.objects.registry.Registry;
+import com.stardevllc.starlib.objects.registry.RegistryObject;
 import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.line.QuestLine;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class QuestLineRegistry extends StringRegistry<QuestLine<?>> {
+public class QuestLineRegistry extends Registry<String, QuestLine<?>> {
     
     private FieldInjector injector;
     
@@ -20,7 +20,7 @@ public class QuestLineRegistry extends StringRegistry<QuestLine<?>> {
     
     public <H extends QuestHolder<?>> List<QuestLine<H>> getObjects(Class<H> holderType) {
         List<QuestLine<H>> quests = new ArrayList<>();
-        for (QuestLine<?> questLine : this) {
+        for (QuestLine<?> questLine : this.values()) {
             if (questLine.getHolderType().isAssignableFrom(holderType)) {
                 quests.add((QuestLine<H>) questLine);
             }

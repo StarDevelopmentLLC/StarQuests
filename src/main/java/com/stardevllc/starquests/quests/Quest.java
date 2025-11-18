@@ -1,10 +1,10 @@
 package com.stardevllc.starquests.quests;
 
 import com.stardevllc.starcore.api.StarColors;
-import com.stardevllc.starlib.builder.IBuilder;
 import com.stardevllc.starlib.helper.StringHelper;
 import com.stardevllc.starlib.injector.FieldInjector;
 import com.stardevllc.starlib.injector.Inject;
+import com.stardevllc.starlib.objects.builder.IBuilder;
 import com.stardevllc.starquests.StarQuests;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.holder.QuestHolder;
@@ -66,7 +66,6 @@ public class Quest<H extends QuestHolder<?>> implements Comparable<Quest<H>> {
         this.actions = new ActionRegistry(this.injector);
         this.markCompleteForHolder = markCompleteForHolder;
         if (actions != null) {
-            this.actions.putAll(actions);
             actions.values().forEach(a -> {
                 this.actions.register(a);
                 primaryActionRegistry.register(a);

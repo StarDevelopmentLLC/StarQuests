@@ -10,7 +10,6 @@ import com.stardevllc.starquests.events.ActionCompleteEvent;
 import com.stardevllc.starquests.events.QuestEvent;
 import com.stardevllc.starquests.holder.QuestHolder;
 import com.stardevllc.starquests.holder.QuestPlayer;
-import com.stardevllc.starquests.hooks.StarEventsHook;
 import com.stardevllc.starquests.line.QuestLine;
 import com.stardevllc.starquests.quests.Quest;
 import com.stardevllc.starquests.registry.*;
@@ -43,7 +42,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
         this.questRegistry = new QuestRegistry(getInjector());
         QuestLine.setPrimaryQuestRegistry(this.questRegistry);
         this.questLineRegistry = new QuestLineRegistry(getInjector());
-        QuestHolder.setColorFunction(text -> getColors().colorLegacy(text));
+        QuestHolder.setColorFunction(text -> getColors().getSectionLegacy().serialize(getColors().getAmpersandLegacy().deserialize(text)));
         getInjector().set(questRegistry);
         getInjector().set(questLineRegistry);
         getInjector().set(holders);
@@ -70,8 +69,6 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
                 handleQuestActionTrigger(e, holder);
             }
         });
-        
-        StarEvents.addEventListener(new StarEventsHook());
         
         QuestLine.Builder<QuestPlayer> woodenLineBuilder = QuestLine.builder(QuestPlayer.class)
                 .name("Wooden Resources")
@@ -347,7 +344,7 @@ public class StarQuests extends ExtendedJavaPlugin implements Listener {
     }
     
     public <H extends QuestHolder<?>> void handleQuestActionTrigger(Object questActionObject, H holder) {
-        for (QuestAction<?, ?> action : actionRegistry) {
+        for (QuestAction<?, ?> action : actionRegistry.values()) {
             if (action.getType().equals(questActionObject.getClass()) && action.getHolderType().equals(holder.getClass())) {
                 handleQuestAction(action, questActionObject, holder);
             }

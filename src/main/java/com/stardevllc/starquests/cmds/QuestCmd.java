@@ -23,7 +23,7 @@ public class QuestCmd implements CommandExecutor {
         QuestPlayer questPlayer = plugin.getPlayer(player.getUniqueId());
         
         boolean hasQuest = false;
-        for (Quest<?> quest : plugin.getQuestRegistry()) {
+        for (Quest<?> quest : plugin.getQuestRegistry().values()) {
             if (quest.isAvailable(questPlayer).asBoolean()) {
                 hasQuest = true;
                 plugin.getColors().coloredLegacy(player, "&e" + quest.getName());

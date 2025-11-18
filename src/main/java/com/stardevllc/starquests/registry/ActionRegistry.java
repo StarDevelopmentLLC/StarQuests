@@ -1,12 +1,12 @@
 package com.stardevllc.starquests.registry;
 
 import com.stardevllc.starlib.injector.FieldInjector;
-import com.stardevllc.starlib.registry.RegistryObject;
-import com.stardevllc.starlib.registry.StringRegistry;
+import com.stardevllc.starlib.objects.registry.Registry;
+import com.stardevllc.starlib.objects.registry.RegistryObject;
 import com.stardevllc.starquests.actions.QuestAction;
 import com.stardevllc.starquests.holder.QuestHolder;
 
-public class ActionRegistry extends StringRegistry<QuestAction<?, ?>> {
+public class ActionRegistry extends Registry<String, QuestAction<?, ?>> {
     
     private FieldInjector injector;
     
